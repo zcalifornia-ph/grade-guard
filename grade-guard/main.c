@@ -24,61 +24,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>
-#include <stdarg.h>
-#include <windows.h>
 #include <stdbool.h>
 #include <string.h>
 
 #include "header/models.h"
+#include "header/ui_console.h"
 #include "header/vector.h"
 
 /** --- --- --- Constant Definitions --- --- --- **/
-
-/// Selection List Type
-
-#define NUMERIC 0
-#define LOWS_ALPHABETICAL 1
-#define CAPS_ALPHABETICAL 2
-#define BULLET_POINT 3
-
-/// TUI Input Keys
-
-#define LEFT_ARROW 75
-#define RIGHT_ARROW 77
-#define UP_ARROW 72
-#define DOWN_ARROW 80
-#define ENTER 13
-#define ESCAPE 27
-#define BACK_SPACE 8
-
-/// TUI Output Color
-
-#define BLACK        0
-#define BLUE         1
-#define GREEN        2
-#define AQUA         3
-#define RED          4
-#define PURPLE       5
-#define YELLOW       6
-#define WHITE        7
-#define GRAY         8
-#define LIGHT_BLUE   9
-#define LIGHT_GREEN  10
-#define LIGHT_AQUA   11
-#define LIGHT_RED    12
-#define LIGHT_PURPLE 13
-#define LIGHT_YELLOW 14
-#define BRIGHT_WHITE 15
-
-/// TUI Selection Type
-
-#define UI_VERTICAL 0
-#define UI_HORIZONTAL 1
-#define UI_BOTH 2
-
-const char* lower_alphabet = "abcdefghijklmnopqrtsuvwxyz";
-const char* upper_alphabet = "ABCDEFGHIJKLMNOPQRTSUVWXYZ";
 
 /*
 
@@ -92,42 +45,9 @@ const char* upper_alphabet = "ABCDEFGHIJKLMNOPQRTSUVWXYZ";
 
 const float GRADE_GOALS[] = {3.00, 2.375, 1.75, 1.45, 1.20};
 
-typedef unsigned long u_long;
-
 /** --- --- --- Function Prototypes --- --- --- **/
 
-/// UI Functions
-
-void ui_fullscreen();
-void ui_set_font_size();
-
-void ui_header();
-void ui_box(const char* heading, const char* message);
-
-int ui_selection(const char* heading, const char* message, const int list_mode, const int size, ...);
-
-int ui_field(const char* heading, const char* message, const size_t size, ...);
-
-int ui_selection_handler(const char c, int* const selected, const int TYPE, const int lower_bound, const int upper_bound);
-
-void ui_color(const int text_color, const int background_color);
-void ui_reset_color();
-
-void ui_hide_caret();
-
-/// File Functions
-
-const char* fgetline(FILE* file);
-u_long fcountlines(const char* dst);
-
 /** --- --- --- Driver Functions --- --- --- **/
-
-int cursor_x(); // Function to get the current X position of the cursor
-int cursor_y(); // Function to get the current Y position of the cursor
-void gotoxy(int x, int y); // Function to set cursor position
-
-void ui_field_input(const char* field_name, Vector* field_vector); // Function for user input in a field
-void ui_show_failure(const char* m); // Function to show failure message
 void ui_show_profile_header(Student_Profile* profile); // Function to display profile header
 void ui_profile_login(Student_Profile* profile); // Function for profile login
 
@@ -148,6 +68,49 @@ Student_Profile load_student_profile_from_csv(char* dir);
 int file_exists(const char* filename);
 
 char* append_size_to_csv(size_t size);
+
+static void vector_chars_to_cstring(const Vector* source, char* destination)
+    {
+        size_t length;
+
+        if(destination == NULL)
+            {
+                return;
+            }
+
+        length = vector_size(source);
+
+        if(source != NULL && source->data != NULL && length > 0)
+            {
+                memcpy(destination, source->data, length);
+            }
+
+        destination[length] = '\0';
+    }
+
+static char* vector_chars_duplicate(const Vector* source)
+    {
+        char* duplicate;
+
+        duplicate = malloc(vector_size(source) + 1);
+        if(duplicate == NULL)
+            {
+                return NULL;
+            }
+
+        vector_chars_to_cstring(source, duplicate);
+
+        return duplicate;
+    }
+
+static const char** option_array_create(size_t count)
+    {
+        size_t allocation_count;
+
+        allocation_count = count > 0 ? count : 1;
+
+        return (const char**)malloc(sizeof(const char*) * allocation_count);
+    }
 
 /** --- --- --- Main Function --- --- --- **/
 
@@ -187,7 +150,7 @@ int main()
                 ui_header();
                 selected = ui_selection("Welcome User!",
                                         "[Main Menu]",
-                                        BULLET_POINT, 3,
+                                        UI_LIST_BULLET_POINT, 3,
                                         "New Profile",
                                         "Select Profile",
                                         "Exit");
@@ -209,16 +172,22 @@ int main()
                                 printf("    [Select Profile]\n\n");
 
                                 Vector* string = vector_create(sizeof(char));
+                                char* student_number;
+
                                     ui_field_input("Enter Student Number", string); // Use the existing input function for course units
                                     printf("\n");
 
                                     // Convert input from vector to float
-                                    char student_number[vector_size(string) + 1]; // Temporary buffer to hold the string
-                                    memcpy(student_number, (char*)vector_at(string, 0), string->element_size*vector_size(string));
-                                    student_number[vector_size(string)] = '\0';
+                                    student_number = vector_chars_duplicate(string);
 
                                 // Free the unit input vector
                                 vector_destroy(string);
+
+                                if(student_number == NULL)
+                                    {
+                                        ui_show_failure("Unable to allocate student number buffer.");
+                                        break;
+                                    }
 
                                 Student_Profile* selected_profile = NULL;
 
@@ -233,8 +202,10 @@ int main()
                                             }
                                     }
 
-                                if(selected_profile){system("cls"); ui_profile_login(selected_profile);}
+                                if(selected_profile){ui_clear_screen(); ui_profile_login(selected_profile);}
                                 else{ui_show_failure("Profile not found, returning to main menu");}
+
+                                free(student_number);
 
                                 break;
                             }
@@ -261,309 +232,6 @@ int main()
 
                                 return 0;
                             }
-                    }
-            }
-
-        return 0;
-    }
-
-/** --- --- --- TUI Output Functions --- --- --- **/
-
-void ui_set_font_size()
-{
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-    // Get the console window size in characters
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-
-    if(!GetConsoleScreenBufferInfo(hConsole, &csbi)){return;}
-
-    int w = (float)screenWidth / (((float)(csbi.srWindow.Right - csbi.srWindow.Left + 1)));
-    int h = (float)screenHeight / (((float)(csbi.srWindow.Bottom - csbi.srWindow.Top + 1)));
-
-    // Get the current console font information
-    CONSOLE_FONT_INFOEX fontInfo;
-    fontInfo.cbSize = sizeof(CONSOLE_FONT_INFOEX);
-
-    if(!GetCurrentConsoleFontEx(hConsole, FALSE, &fontInfo)){return;}
-
-    // Set the new font size
-    fontInfo.dwFontSize.X = w;   // Width of each character in the font
-    fontInfo.dwFontSize.Y = h; // Height of each character in the font
-
-    SetCurrentConsoleFontEx(hConsole, FALSE, &fontInfo);
-}
-
-void ui_fullscreen()
-    {
-        // Retrieve a handle to the console window
-        HWND consoleWindow = GetConsoleWindow();
-        if(consoleWindow == NULL){return;}
-
-        // Retrieve a handle to the console screen bufferf
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        if(hConsole == INVALID_HANDLE_VALUE){return;}
-
-        // Set the console display to fullscreen
-        DWORD consoleMode = 0;
-        if(!GetConsoleDisplayMode(&consoleMode)){return;}
-
-        // Check if the console is already in fullscreen
-        if(!(consoleMode & CONSOLE_FULLSCREEN_MODE))
-            {
-                if(!SetConsoleDisplayMode(hConsole, CONSOLE_FULLSCREEN_MODE, NULL)){return;}
-            }
-    }
-
-void ui_header()
-    {
-        ui_color(RED,BLACK);
-
-        puts("\n  dP\"\"b8    88\"\"Yb       db       8888b.     888888        dP\"\"b8    88   88       db       88\"\"Yb    8888b.  ");
-        puts(" dP   `\"    88__dP      dPYb       8I  Yb    88__         dP   `\"    88   88      dPYb      88__dP     8I  Yb ");
-        puts(" Yb  \"88    88\"Yb      dP__Yb      8I  dY    88\"\"         Yb  \"88    Y8   8P     dP__Yb     88\"Yb      8I  dY ");
-        puts("  YboodP    88  Yb    dP\"\"\"\"Yb    8888Y\"     888888        YboodP    `YbodP'    dP\"\"\"\"Yb    88  Yb    8888Y\"  ");
-
-        ui_color(GREEN,BLACK);
-
-        printf("\n       CMSC 18 FINAL PROJECT");
-
-        ui_reset_color();
-        printf(" | ");
-        ui_color(GREEN,BLACK);
-
-        printf("A GRADE CALCULATOR AND TRACKER");
-
-        ui_reset_color();
-        printf(" | ");
-        ui_color(GREEN,BLACK);
-
-        printf("UNIVERSITY OF THE PHILIPPINES MINDANAO\n");
-
-        ui_reset_color();
-
-        puts("\n        - Zildjian E. California - Ravhen M. Grageda - Charisse C. Lorejo - Jhaye Marie H. Gonzales -\n");
-        puts("===============================================================================================================\n");
-    }
-
-void ui_box(const char* heading, const char* message)
-    {
-        ui_header();
-
-        printf("    %s\n\n", heading);
-        printf("    %s\n", message);
-    }
-
-int ui_selection(const char* heading, const char* message, const int list_mode, const int size, ...)
-    {
-        int i, y, selected = 0;
-
-        printf("    %s\n\n", heading);
-        printf("    %s\n\n", message);
-
-        va_list args; // Initialize variadic list
-        va_start(args, size); // Start list
-
-        y = cursor_y(); // initial position
-
-        // Main loop for selection
-        while(1)
-            {
-                // Move the cursor back to the start of the selection
-                gotoxy(0, y);
-
-                // Clear the previous selection display
-                for(i = 0; i < size; i++){printf("\033[K");} // ANSI escape code to clear the line
-
-                // Display the selection
-                va_start(args, size); // start variadic list
-
-                for(i = 0; i < size; i++)
-                    {
-                        if(i == selected)
-                            {
-                                printf("    ");
-                                ui_color(BLACK, WHITE);
-
-                                switch(list_mode)
-                                    {
-                                        case NUMERIC:
-                                            printf("%d. %s\n", i + 1, va_arg(args, char*));
-                                            break;
-                                        case CAPS_ALPHABETICAL:
-                                            printf("%c. %s\n", upper_alphabet[i % 27], va_arg(args, char*));
-                                            break;
-                                        case LOWS_ALPHABETICAL:
-                                            printf("%c. %s\n", lower_alphabet[i % 27], va_arg(args, char*));
-                                            break;
-                                        case BULLET_POINT:
-                                            printf("* %s\n", va_arg(args, char*));
-                                            break;
-                                        default:
-                                            printf("%d. %s\n", i + 1, va_arg(args, char*));
-                                            break;
-                                    }
-
-                                ui_reset_color();
-                            }
-                        else
-                            {
-                                switch(list_mode)
-                                    {
-                                        case NUMERIC:
-                                            printf("    %d. %s\n", i + 1, va_arg(args, char*));
-                                            break;
-                                        case CAPS_ALPHABETICAL:
-                                            printf("    %c. %s\n", upper_alphabet[i % 27], va_arg(args, char*));
-                                            break;
-                                        case LOWS_ALPHABETICAL:
-                                            printf("    %c. %s\n", lower_alphabet[i % 27], va_arg(args, char*));
-                                            break;
-                                        case BULLET_POINT:
-                                            printf("    * %s\n", va_arg(args, char*));
-                                            break;
-                                        default:
-                                            printf("    %d. %s\n", i + 1, va_arg(args, char*));
-                                            break;
-                                    }
-                            }
-                    }
-
-                va_end(args); // End list
-
-                // Handle user input for selection
-                int input = getch();
-                if (ui_selection_handler(input, &selected, UI_BOTH, 0, size) == -2) {
-                    system("cls");
-                    break; // Exit the loop if the selection is confirmed
-                }
-            }
-
-        return selected;
-    }
-
-// much better variant of ui_selection, uses array of c strings with size
-int ui_selection_array(const char* heading, const char* message, const int list_mode, const int size, char** options)
-    {
-        int i, y, selected = 0;
-
-        printf("    %s\n\n", heading);
-        printf("    %s\n\n", message);
-
-        y = cursor_y(); // initial position
-
-        // Main loop for selection
-        while(1)
-            {
-                // Move the cursor back to the start of the selection
-                gotoxy(0, y);
-
-                // Clear the previous selection display
-                for(i = 0; i < size; i++)
-                    {
-                        printf("\033[K"); // ANSI escape code to clear the line
-                    }
-
-                // Display the selection
-                for(i = 0; i < size; i++)
-                    {
-                        if(i == selected)
-                            {
-                                printf("    ");
-                                ui_color(BLACK, WHITE);
-                            }
-                        else{printf("    ");}
-
-                        switch(list_mode)
-                            {
-                                case NUMERIC:
-                                    printf("%d. %s\n", i + 1, options[i]);
-                                    break;
-                                case CAPS_ALPHABETICAL:
-                                    printf("%c. %s\n", upper_alphabet[i % 27], options[i]);
-                                    break;
-                                case LOWS_ALPHABETICAL:
-                                    printf("%c. %s\n", lower_alphabet[i % 27], options[i]);
-                                    break;
-                                case BULLET_POINT:
-                                    printf("* %s\n", options[i]);
-                                    break;
-                                default:
-                                    printf("%d. %s\n", i + 1, options[i]);
-                                    break;
-                            }
-
-                        if(i == selected){ui_reset_color();}
-                    }
-
-                // Handle user input for selection
-                int input = getch();
-                if (ui_selection_handler(input, &selected, UI_BOTH, 0, size) == -2) {
-                    system("cls");
-                    break; // Exit the loop if the selection is confirmed
-                }
-            }
-
-        return selected;
-    }
-
-void ui_color(const int text_color, const int background_color)
-    {
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        if(hConsole == INVALID_HANDLE_VALUE){return;}
-
-        SetConsoleTextAttribute(hConsole, ((background_color << 4) | text_color));
-    }
-
-void ui_reset_color(){ui_color(WHITE,BLACK);}
-
-void ui_hide_caret()
-    {
-       HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-       CONSOLE_CURSOR_INFO info;
-
-       info.dwSize = 100;
-       info.bVisible = FALSE;
-       SetConsoleCursorInfo(consoleHandle, &info);
-    }
-
-/** --- --- --- TUI Input Functions --- --- --- **/
-
-int ui_selection_handler(const char c, int* const selected, const int TYPE, const int lower_bound, const int upper_bound)
-    {
-        if(c == ENTER){return -2;}
-
-        switch(TYPE)
-            {
-                case UI_VERTICAL:
-                    {
-                        if((c == UP_ARROW || c == 'w' || c == 'W') && *selected-1 > lower_bound-1){(*selected)-=1;}
-                        else if((c == DOWN_ARROW || c == 's' || c == 'S') && *selected+1 < upper_bound){(*selected)+=1;}
-
-                        break;
-                    }
-
-                case UI_HORIZONTAL:
-                    {
-                        if((c == LEFT_ARROW || c == 'a' || c == 'A') && *selected-1 > lower_bound-1){(*selected)-=1;}
-                        else if((c == RIGHT_ARROW || c == 'd' || c == 'D') && *selected+1 < upper_bound){(*selected)+=1;}
-
-                        break;
-                    }
-
-                case UI_BOTH:
-                    {
-                        if((c == UP_ARROW || c == 'w' || c == 'W') && *selected-1 > lower_bound-1){(*selected)-=1;}
-                        else if((c == DOWN_ARROW || c == 's' || c == 'S') && *selected+1 < upper_bound){(*selected)+=1;}
-                        else if((c == LEFT_ARROW || c == 'a' || c == 'A') && *selected-1 > lower_bound-1){(*selected)-=1;}
-                        else if((c == RIGHT_ARROW || c == 'd' || c == 'D') && *selected+1 < upper_bound){(*selected)+=1;}
-                    }
-
-                default:
-                    {
-                        return -1;
                     }
             }
 
@@ -811,101 +479,10 @@ char* append_size_to_csv(size_t size)
         return result; // Return the new string
     }
 
-/** --- --- --- Driver Functions --- --- --- **/
-
-// Function to get the current X position of the cursor
-int cursor_x()
-    {
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        CONSOLE_SCREEN_BUFFER_INFO csbi; // get console handle and get cursor x position
-
-        if(GetConsoleScreenBufferInfo(hConsole, &csbi)){return csbi.dwCursorPosition.X;}
-        else{return 0;}
-    }
-
-// Function to get the current Y position of the cursor
-int cursor_y()
-    {
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        CONSOLE_SCREEN_BUFFER_INFO csbi; // get console handle and get cursor y position
-
-        if(GetConsoleScreenBufferInfo(hConsole, &csbi)){return csbi.dwCursorPosition.Y;}
-        else{return 0;}
-    }
-
-// Function to set cursor position
-void gotoxy(int x, int y)
-    {
-        COORD coord;
-            coord.X = x;
-            coord.Y = y;
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    }
-
-void ui_field_input(const char* field_name, Vector* field_vector)
-    {
-        char c;
-
-        // Initial display
-        printf("    %s: ", field_name);
-
-        int x = cursor_x(),
-            y = cursor_y();
-
-        // Display the current input
-        for (size_t i = 0; i < vector_size(field_vector); i++)
-            {
-                printf("%c", *(char*)vector_at(field_vector, i));
-            }
-
-        printf("\n                                               \n    Press Enter to save or Backspace to delete.\n");
-
-        while((c = getch()) != ENTER)
-            {
-                if(c == BACK_SPACE)
-                    {
-                        vector_pop_back(field_vector);
-                    }
-                else if(isprint(c))
-                    {
-                        vector_push_back(field_vector, &c);
-                    }
-
-                // Move the cursor back to the input field
-                gotoxy(x, y); // Set cursor position to the start of the input field
-
-                // Clear the current input line
-                for (size_t i = 0; i < vector_size(field_vector); i++)
-                    {
-                        printf("%c", *(char*)vector_at(field_vector, i));
-                    }
-
-                // Print spaces to clear any remaining characters if the input is shorter
-                for (size_t i = vector_size(field_vector); i < 100; i++) // Assuming a max length of 100
-                    {
-                        printf(" "); // Print spaces to clear the line
-                    }
-
-                // Move the cursor back to the end of the input
-                gotoxy(x, y); // Set cursor position to the start of the input field
-                for(size_t i = 0; i < vector_size(field_vector); i++)
-                    {
-                        printf("%c", *(char*)vector_at(field_vector, i));
-                    }
-
-                // Move the cursor to the end of the input
-                gotoxy(x + vector_size(field_vector), y); // Set cursor position to the end of the input
-                printf("\n\n    Press Enter to save or Backspace to delete.\n");
-            }
-
-        gotoxy(x, cursor_y()-3);
-
-        printf("\n");
-    }
-
 void input_courses(Student_Profile* profile)
     {
         char c;
+        char* unit_input;
         Vector* string;
 
         while(true)
@@ -919,7 +496,7 @@ void input_courses(Student_Profile* profile)
                     }
 
                 // Clear the console and redraw the input field
-                system("cls");
+                ui_clear_screen();
                 ui_header();
                 ui_show_profile_header(profile);
 
@@ -949,24 +526,35 @@ void input_courses(Student_Profile* profile)
                 string = vector_create(sizeof(char));
                 ui_field_input("Enter Course Name", string); // Use the existing input function for course name
 
-                    new_course.name = malloc(vector_size(string) + 1);
-                    memcpy(new_course.name, (char*)vector_at(string, 0), string->element_size*vector_size(string));
-                    new_course.name[vector_size(string)] = '\0';
+                    new_course.name = vector_chars_duplicate(string);
 
                 vector_destroy(string);
+
+                if(new_course.name == NULL)
+                    {
+                        ui_show_failure("Unable to allocate course name.");
+                        course_reset(&new_course);
+                        break;
+                    }
 
                 string = vector_create(sizeof(char));
                     ui_field_input("Enter Course Units", string); // Use the existing input function for course units
 
                     // Convert input from vector to float
-                    char unit_input[vector_size(string) + 1]; // Temporary buffer to hold the string
-                    memcpy(unit_input, (char*)vector_at(string, 0), string->element_size*vector_size(string));
-                    unit_input[vector_size(string)] = '\0';
-
-                    new_course.units = atof(unit_input); // Convert to float
+                    unit_input = vector_chars_duplicate(string);
 
                 // Free the unit input vector
                 vector_destroy(string);
+
+                if(unit_input == NULL)
+                    {
+                        ui_show_failure("Unable to allocate course unit buffer.");
+                        course_reset(&new_course);
+                        break;
+                    }
+
+                    new_course.units = atof(unit_input); // Convert to float
+                    free(unit_input);
 
                 // Ask if it's a lab course
                 printf("\n    Is this a lab course? (Y/N):                      ");
@@ -974,12 +562,12 @@ void input_courses(Student_Profile* profile)
 
                 confirmation:
 
-                    c = getch();
-                    if(c == 'y' || c == 'y')
+                    c = (char)ui_read_key();
+                    if(c == 'y' || c == 'Y')
                         {
                             new_course.lab_flag = true;
                         }
-                    else if(c == 'n' || c == 'n'){new_course.lab_flag = false;}
+                    else if(c == 'n' || c == 'N'){new_course.lab_flag = false;}
                     else{goto confirmation;}
 
                     if(new_course.lab_flag){printf("Yes\n\n");}
@@ -990,25 +578,9 @@ void input_courses(Student_Profile* profile)
 
                 // ask if the user wants to add another course
                 printf("    Do you want to add another course? (Press ESC to stop, any other key to continue)\n");
-                c = getch();
-                if(c == ESCAPE){system("cls"); break;}
+                c = (char)ui_read_key();
+                if(c == UI_KEY_ESCAPE){ui_clear_screen(); break;}
             }
-    }
-
-void ui_show_failure(const char* m)
-    {
-        printf("    %s", m);
-
-        printf(" .");
-        Sleep(500);
-
-        printf(" .");
-        Sleep(500);
-
-        printf(" .");
-        Sleep(500);
-
-        system("cls");
     }
 
 float percentage_to_gwa(float percentage)
@@ -1164,7 +736,7 @@ void ui_profile_login(Student_Profile* profile)
 
             selected = ui_selection("[Profile Operations]",
                                     "Select an operation:",
-                                    CAPS_ALPHABETICAL, 5,
+                                    UI_LIST_CAPS_ALPHABETICAL, 5,
                                     "Activity Operations",
                                     "Course Operations",
                                     "Profile Settings",
@@ -1180,7 +752,7 @@ void ui_profile_login(Student_Profile* profile)
 
                             selected = ui_selection("[Activity Operations]",
                                                     "Select an operation:",
-                                                    LOWS_ALPHABETICAL, 4,
+                                                    UI_LIST_LOWS_ALPHABETICAL, 4,
                                                     "Add Activity",
                                                     "Add Score",
                                                     "Delete Activity",
@@ -1190,17 +762,33 @@ void ui_profile_login(Student_Profile* profile)
                                 {
                                     case 0: /// Add Activity
                                             {
+                                                const char** options;
+                                                const char** params;
+                                                char* total_score_cstr;
+
                                                 ui_header();
                                                 ui_show_profile_header(profile);
 
-                                                char* options[vector_size(profile->courses)];
+                                                if(vector_size(profile->courses) == 0)
+                                                    {
+                                                        ui_show_failure("No courses available.");
+                                                        break;
+                                                    }
+
+                                                options = option_array_create(vector_size(profile->courses));
+                                                if(options == NULL)
+                                                    {
+                                                        ui_show_failure("Unable to allocate course options.");
+                                                        break;
+                                                    }
 
                                                 for(i = 0; i < vector_size(profile->courses); i++)
                                                     {
                                                         options[i] = ((Course*)vector_at(profile->courses,i))->name;
                                                     }
 
-                                                selected = ui_selection_array("[Add Activity]", "Select a Course:", NUMERIC, vector_size(profile->courses), options);
+                                                selected = ui_selection_array("[Add Activity]", "Select a Course:", UI_LIST_NUMERIC, vector_size(profile->courses), options);
+                                                free((void*)options);
 
                                                 Course* course = (Course*)vector_at(profile->courses, selected);
                                                 Course_Component* component;
@@ -1212,7 +800,7 @@ void ui_profile_login(Student_Profile* profile)
 
                                                             component = ui_selection_array("[Add Activity]",
                                                                                            "Select a Component:",
-                                                                                           NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
+                                                                                           UI_LIST_NUMERIC, 2, (const char* const[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
                                                         }
                                                     else{component = &course->lecture;}
 
@@ -1230,14 +818,20 @@ void ui_profile_login(Student_Profile* profile)
                                                         break;
                                                     }
 
-                                                char* params[vector_size(component->parameters)];
+                                                params = option_array_create(vector_size(component->parameters));
+                                                if(params == NULL)
+                                                    {
+                                                        ui_show_failure("Unable to allocate parameter options.");
+                                                        break;
+                                                    }
 
                                                 for(i = 0; i < vector_size(component->parameters); i++)
                                                     {
                                                         params[i] = ((Course_Parameter*)vector_at(component->parameters,i))->parameter_name;
                                                     }
 
-                                                selected = ui_selection_array("[Add Activity]", "Select a Parameter:", BULLET_POINT, vector_size(component->parameters), params);
+                                                selected = ui_selection_array("[Add Activity]", "Select a Parameter:", UI_LIST_BULLET_POINT, vector_size(component->parameters), params);
+                                                free((void*)params);
 
                                                 Course_Parameter* parameter = (Course_Parameter*)vector_at(component->parameters, selected);
 
@@ -1249,47 +843,74 @@ void ui_profile_login(Student_Profile* profile)
 
                                                     string = vector_create(sizeof(char)); // allocate a string
                                                         ui_field_input("Enter Activity Name", string);
-                                                        activity.activity_name = (char*)malloc(vector_size(string) + 1);
-                                                        memcpy(activity.activity_name, (char*)vector_at(string, 0), string->element_size*vector_size(string));
-                                                        activity.activity_name[vector_size(string)] = '\0';
+                                                        activity.activity_name = vector_chars_duplicate(string);
 
                                                     // Free the input vector
                                                     vector_destroy(string);
+
+                                                    if(activity.activity_name == NULL)
+                                                        {
+                                                            ui_show_failure("Unable to allocate activity name.");
+                                                            break;
+                                                        }
 
                                                     string = vector_create(sizeof(char)); // allocate a string
                                                         ui_field_input("Enter Total Score of Activity", string);
 
                                                         // Convert input from vector to int
-                                                        char total_score_cstr[vector_size(string) + 1]; // Temporary buffer to hold the string
-                                                        memcpy(total_score_cstr, (char*)vector_at(string, 0), string->element_size*vector_size(string));
-                                                        total_score_cstr[vector_size(string)] = '\0';
-
-                                                        activity.score = 0;
-                                                        activity.total_score = atoi(total_score_cstr); // Convert to int
+                                                        total_score_cstr = vector_chars_duplicate(string);
 
                                                     // Free the input vector
                                                     vector_destroy(string);
 
+                                                    if(total_score_cstr == NULL)
+                                                        {
+                                                            free(activity.activity_name);
+                                                            ui_show_failure("Unable to allocate activity score buffer.");
+                                                            break;
+                                                        }
+
+                                                        activity.score = 0;
+                                                        activity.total_score = atoi(total_score_cstr); // Convert to int
+                                                        free(total_score_cstr);
+
                                                 vector_push_back(parameter->activities, &activity);
 
-                                                system("cls");
+                                                ui_clear_screen();
 
                                                 break;
                                             }
 
                                     case 1: /// Add Score
                                         {
+                                            const char** options;
+                                            const char** parameter_options;
+                                            const char** activity_options;
+                                            char* score_str;
+
                                             ui_header();
                                             ui_show_profile_header(profile);
 
-                                            char* options[vector_size(profile->courses)];
+                                            if(vector_size(profile->courses) == 0)
+                                                {
+                                                    ui_show_failure("No courses available.");
+                                                    break;
+                                                }
+
+                                            options = option_array_create(vector_size(profile->courses));
+                                            if(options == NULL)
+                                                {
+                                                    ui_show_failure("Unable to allocate course options.");
+                                                    break;
+                                                }
 
                                             for(i = 0; i < vector_size(profile->courses); i++)
                                                 {
                                                     options[i] = ((Course*)vector_at(profile->courses,i))->name;
                                                 }
 
-                                            selected = ui_selection_array("[Add Score]", "Select a Course:", NUMERIC, vector_size(profile->courses), options);
+                                            selected = ui_selection_array("[Add Score]", "Select a Course:", UI_LIST_NUMERIC, vector_size(profile->courses), options);
+                                            free((void*)options);
 
                                             Course* course = (Course*)vector_at(profile->courses, selected);
                                             Course_Component* component;
@@ -1301,7 +922,7 @@ void ui_profile_login(Student_Profile* profile)
 
                                                     component = ui_selection_array("[Add Score]",
                                                                                    "Select a Component:",
-                                                                                   NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
+                                                                                   UI_LIST_NUMERIC, 2, (const char* const[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
                                                 }
                                             else
                                                 {
@@ -1318,7 +939,13 @@ void ui_profile_login(Student_Profile* profile)
                                                 }
 
                                             // Display parameters and allow user to select one
-                                            char* parameter_options[vector_size(component->parameters)];
+                                            parameter_options = option_array_create(vector_size(component->parameters));
+                                            if(parameter_options == NULL)
+                                                {
+                                                    ui_show_failure("Unable to allocate parameter options.");
+                                                    break;
+                                                }
+
                                             for(i = 0; i < vector_size(component->parameters); i++)
                                                 {
                                                     parameter_options[i] = ((Course_Parameter*)vector_at(component->parameters, i))->parameter_name;
@@ -1327,7 +954,8 @@ void ui_profile_login(Student_Profile* profile)
                                             ui_header();
                                             ui_show_profile_header(profile);
 
-                                            selected = ui_selection_array("[Add Score]", "Select a Parameter:", BULLET_POINT, vector_size(component->parameters), parameter_options);
+                                            selected = ui_selection_array("[Add Score]", "Select a Parameter:", UI_LIST_BULLET_POINT, vector_size(component->parameters), parameter_options);
+                                            free((void*)parameter_options);
                                             Course_Parameter* parameter = (Course_Parameter*)vector_at(component->parameters, selected);
 
                                             // Display activities and allow user to select one to modify the score
@@ -1337,7 +965,13 @@ void ui_profile_login(Student_Profile* profile)
                                                     break;
                                                 }
 
-                                            char* activity_options[vector_size(parameter->activities)];
+                                            activity_options = option_array_create(vector_size(parameter->activities));
+                                            if(activity_options == NULL)
+                                                {
+                                                    ui_show_failure("Unable to allocate activity options.");
+                                                    break;
+                                                }
+
                                             for(i = 0; i < vector_size(parameter->activities); i++)
                                                 {
                                                     activity_options[i] = ((Activities*)vector_at(parameter->activities, i))->activity_name;
@@ -1346,7 +980,8 @@ void ui_profile_login(Student_Profile* profile)
                                             ui_header();
                                             ui_show_profile_header(profile);
 
-                                            selected = ui_selection_array("[Add Score]", "Select an Activity:", BULLET_POINT, vector_size(parameter->activities), activity_options);
+                                            selected = ui_selection_array("[Add Score]", "Select an Activity:", UI_LIST_BULLET_POINT, vector_size(parameter->activities), activity_options);
+                                            free((void*)activity_options);
                                             Activities* selected_activity = (Activities*)vector_at(parameter->activities, selected);
 
                                             // Input new score
@@ -1355,32 +990,53 @@ void ui_profile_login(Student_Profile* profile)
                                             string = vector_create(sizeof(char));
                                             ui_field_input("Enter New Score", string);
 
-                                            char score_str[vector_size(string) + 1];
-                                            memcpy(score_str, (char*)vector_at(string, 0), string->element_size * vector_size(string));
-                                            score_str[vector_size(string)] = '\0';
+                                            score_str = vector_chars_duplicate(string);
+
+                                            vector_destroy(string);
+
+                                            if(score_str == NULL)
+                                                {
+                                                    ui_show_failure("Unable to allocate score buffer.");
+                                                    break;
+                                                }
 
                                             // Update the score of the selected activity
                                             selected_activity->score = atoi(score_str); // Convert to int and update
+                                            free(score_str);
 
-                                            // Free the input vector
-                                            vector_destroy(string);
-
-                                            system("cls");
+                                            ui_clear_screen();
                                             break;
                                         }
 
                                     case 2: /// Delete Activity
                                         {
+                                            const char** course_options;
+                                            const char** activity_options;
+                                            const char** activity_names;
+
                                             ui_header();
                                             ui_show_profile_header(profile);
 
-                                            char* course_options[vector_size(profile->courses)];
+                                            if(vector_size(profile->courses) == 0)
+                                                {
+                                                    ui_show_failure("No courses available.");
+                                                    break;
+                                                }
+
+                                            course_options = option_array_create(vector_size(profile->courses));
+                                            if(course_options == NULL)
+                                                {
+                                                    ui_show_failure("Unable to allocate course options.");
+                                                    break;
+                                                }
+
                                             for(i = 0; i < vector_size(profile->courses); i++)
                                                 {
                                                     course_options[i] = ((Course*)vector_at(profile->courses, i))->name;
                                                 }
 
-                                            selected = ui_selection_array("[Delete Activity]", "Select a Course:", NUMERIC, vector_size(profile->courses), course_options);
+                                            selected = ui_selection_array("[Delete Activity]", "Select a Course:", UI_LIST_NUMERIC, vector_size(profile->courses), course_options);
+                                            free((void*)course_options);
                                             Course* course = (Course*)vector_at(profile->courses, selected);
                                             Course_Component* component;
 
@@ -1391,7 +1047,7 @@ void ui_profile_login(Student_Profile* profile)
 
                                                     component = ui_selection_array("[Delete Activity]",
                                                                                    "Select a Component:",
-                                                                                   NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
+                                                                                   UI_LIST_NUMERIC, 2, (const char* const[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
                                                 }
                                             else
                                                 {
@@ -1408,26 +1064,46 @@ void ui_profile_login(Student_Profile* profile)
                                                 }
 
                                             // Display activities for deletion
-                                            char* activity_options[vector_size(component->parameters)];
+                                            activity_options = option_array_create(vector_size(component->parameters));
+                                            if(activity_options == NULL)
+                                                {
+                                                    ui_show_failure("Unable to allocate parameter options.");
+                                                    break;
+                                                }
+
                                             for(i = 0; i < vector_size(component->parameters); i++)
                                                 {
                                                     activity_options[i] = ((Course_Parameter*)vector_at(component->parameters, i))->parameter_name;
                                                 }
 
-                                            selected = ui_selection_array("[Delete Activity]", "Select a Parameter:", BULLET_POINT , vector_size(component->parameters), activity_options);
+                                            selected = ui_selection_array("[Delete Activity]", "Select a Parameter:", UI_LIST_BULLET_POINT , vector_size(component->parameters), activity_options);
+                                            free((void*)activity_options);
                                             Course_Parameter* parameter = (Course_Parameter*)vector_at(component->parameters, selected);
 
                                             ui_header();
                                             ui_show_profile_header(profile);
 
                                             // Display activities for deletion
-                                            char* activity_names[vector_size(parameter->activities)];
+                                            if(vector_size(parameter->activities) == 0)
+                                                {
+                                                    ui_show_failure("No activities available for this parameter.");
+                                                    break;
+                                                }
+
+                                            activity_names = option_array_create(vector_size(parameter->activities));
+                                            if(activity_names == NULL)
+                                                {
+                                                    ui_show_failure("Unable to allocate activity options.");
+                                                    break;
+                                                }
+
                                             for(i = 0; i < vector_size(parameter->activities); i++)
                                                 {
                                                     activity_names[i] = ((Activities*)vector_at(parameter->activities, i))->activity_name;
                                                 }
 
-                                            selected = ui_selection_array("[Delete Activity]", "Select an Activity to Delete:", BULLET_POINT, vector_size(parameter->activities), activity_names);
+                                            selected = ui_selection_array("[Delete Activity]", "Select an Activity to Delete:", UI_LIST_BULLET_POINT, vector_size(parameter->activities), activity_names);
+                                            free((void*)activity_names);
 
                                             activities_destroy((Activities*)vector_remove(parameter->activities,selected));
 
@@ -1465,7 +1141,7 @@ void ui_profile_login(Student_Profile* profile)
 
                             selected = ui_selection("[Course Operations]",
                                                     "Select an operation:",
-                                                    LOWS_ALPHABETICAL, 4,
+                                                    UI_LIST_LOWS_ALPHABETICAL, 4,
                                                     "Add Course",
                                                     "Delete Course",
                                                     "Course Parameters",
@@ -1481,18 +1157,27 @@ void ui_profile_login(Student_Profile* profile)
 
                                     case 1: /// Delete Course
                                         {
+                                            const char** course_options;
+
                                             if(vector_size(profile->courses)<2){break;}
 
                                             ui_header();
                                             ui_show_profile_header(profile);
 
-                                            char* course_options[vector_size(profile->courses)];
+                                            course_options = option_array_create(vector_size(profile->courses));
+                                            if(course_options == NULL)
+                                                {
+                                                    ui_show_failure("Unable to allocate course options.");
+                                                    break;
+                                                }
+
                                             for(i = 0; i < vector_size(profile->courses); i++)
                                                 {
                                                     course_options[i] = ((Course*)vector_at(profile->courses, i))->name;
                                                 }
 
-                                            selected = ui_selection_array("[Delete Course]", "Select a Course to Delete:", NUMERIC, vector_size(profile->courses), course_options);
+                                            selected = ui_selection_array("[Delete Course]", "Select a Course to Delete:", UI_LIST_NUMERIC, vector_size(profile->courses), course_options);
+                                            free((void*)course_options);
 
                                             void* course = vector_remove(profile->courses,selected);
                                             course_destroy(course);
@@ -1502,16 +1187,31 @@ void ui_profile_login(Student_Profile* profile)
 
                                     case 2: /// Course Parameters
                                         {
+                                            const char** course_options;
+
                                             ui_header();
                                             ui_show_profile_header(profile);
 
-                                            char* course_options[vector_size(profile->courses)];
+                                            if(vector_size(profile->courses) == 0)
+                                                {
+                                                    ui_show_failure("No courses available.");
+                                                    continue;
+                                                }
+
+                                            course_options = option_array_create(vector_size(profile->courses));
+                                            if(course_options == NULL)
+                                                {
+                                                    ui_show_failure("Unable to allocate course options.");
+                                                    continue;
+                                                }
+
                                             for(i = 0; i < vector_size(profile->courses); i++)
                                                 {
                                                     course_options[i] = ((Course*)vector_at(profile->courses, i))->name;
                                                 }
 
-                                            selected = ui_selection_array("[Set Course Parameters]", "Select a Course:", NUMERIC, vector_size(profile->courses), course_options);
+                                            selected = ui_selection_array("[Set Course Parameters]", "Select a Course:", UI_LIST_NUMERIC, vector_size(profile->courses), course_options);
+                                            free((void*)course_options);
                                             Course* course = (Course*)vector_at(profile->courses, selected);
                                             Course_Component* component;
 
@@ -1522,7 +1222,7 @@ void ui_profile_login(Student_Profile* profile)
 
                                                         component = ui_selection_array("[Set Course Parameters]",
                                                                                        "Select a Component:",
-                                                                                       NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
+                                                                                       UI_LIST_NUMERIC, 2, (const char* const[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
                                                     }
                                                 else
                                                     {
@@ -1536,7 +1236,7 @@ void ui_profile_login(Student_Profile* profile)
 
                                             int parameter_action = ui_selection("[Course Parameter Operations]",
                                                                                 "Select an operation:",
-                                                                                LOWS_ALPHABETICAL, 5,
+                                                                                UI_LIST_LOWS_ALPHABETICAL, 5,
                                                                                 "Add Parameter",
                                                                                 "Modify Parameter",
                                                                                 "Print Parameters",
@@ -1550,6 +1250,8 @@ void ui_profile_login(Student_Profile* profile)
                                                 {
                                                     case 0: /// Add Parameter
                                                         {
+                                                            char* weight_string;
+
                                                             Course_Parameter new_param;
 
                                                             if(!course_parameter_init(&new_param))
@@ -1561,43 +1263,64 @@ void ui_profile_login(Student_Profile* profile)
                                                             // Input parameter name
                                                             Vector* name_vector = vector_create(sizeof(char));
                                                             ui_field_input("Enter parameter name", name_vector);
-                                                            new_param.parameter_name = (char*)malloc(vector_size(name_vector) + 1);
-                                                            memcpy(new_param.parameter_name, name_vector->data, vector_size(name_vector));
-                                                            new_param.parameter_name[vector_size(name_vector)] = '\0'; // Null-terminate the string
+                                                            new_param.parameter_name = vector_chars_duplicate(name_vector);
                                                             vector_destroy(name_vector); // Free the temporary vector
+
+                                                            if(new_param.parameter_name == NULL)
+                                                                {
+                                                                    course_parameter_reset(&new_param);
+                                                                    ui_show_failure("Unable to allocate parameter name.");
+                                                                    goto parameter_operations;
+                                                                }
 
                                                             // Input weight
                                                             Vector* weight_vector = vector_create(sizeof(char));
                                                             ui_field_input("Enter weight (in percent)", weight_vector);
-                                                            {
-                                                                char weight_string[vector_size(weight_vector) + 1];
-                                                                memcpy(weight_string, weight_vector->data, vector_size(weight_vector));
-                                                                weight_string[vector_size(weight_vector)] = '\0';
-                                                                new_param.weight = atof(weight_string);
-                                                            }
+                                                            weight_string = vector_chars_duplicate(weight_vector);
                                                             vector_destroy(weight_vector); // Free the temporary vector
+
+                                                            if(weight_string == NULL)
+                                                                {
+                                                                    course_parameter_reset(&new_param);
+                                                                    ui_show_failure("Unable to allocate parameter weight.");
+                                                                    goto parameter_operations;
+                                                                }
+
+                                                            new_param.weight = atof(weight_string);
+                                                            free(weight_string);
 
                                                             vector_push_back(component->parameters, &new_param);
 
-                                                            system("cls");
+                                                            ui_clear_screen();
                                                             goto parameter_operations;
                                                         }
 
                                                     case 1: /// Modify Parameter
                                                         {
+                                                            const char** parameter_options;
+                                                            char* new_name;
+                                                            char* new_weight_string;
+
                                                             if(vector_size(component->parameters) == 0)
                                                                 {
                                                                     ui_show_failure("No parameters to modify.");
                                                                     goto parameter_operations;
                                                                 }
 
-                                                            char* parameter_options[vector_size(component->parameters)];
+                                                            parameter_options = option_array_create(vector_size(component->parameters));
+                                                            if(parameter_options == NULL)
+                                                                {
+                                                                    ui_show_failure("Unable to allocate parameter options.");
+                                                                    goto parameter_operations;
+                                                                }
+
                                                             for(i = 0; i < vector_size(component->parameters); i++)
                                                                 {
                                                                     parameter_options[i] = ((Course_Parameter*)vector_at(component->parameters, i))->parameter_name;
                                                                 }
 
-                                                            selected = ui_selection_array("[Modify Parameter]", "Select a Parameter to Modify:", NUMERIC, vector_size(component->parameters), parameter_options);
+                                                            selected = ui_selection_array("[Modify Parameter]", "Select a Parameter to Modify:", UI_LIST_NUMERIC, vector_size(component->parameters), parameter_options);
+                                                            free((void*)parameter_options);
                                                             Course_Parameter* param_to_modify = (Course_Parameter*)vector_at(component->parameters, selected);
 
                                                             ui_header();
@@ -1609,10 +1332,16 @@ void ui_profile_login(Student_Profile* profile)
 
                                                                 if(vector_size(new_name_vector) > 0)
                                                                     {
+                                                                        new_name = vector_chars_duplicate(new_name_vector);
+                                                                        if(new_name == NULL)
+                                                                            {
+                                                                                vector_destroy(new_name_vector);
+                                                                                ui_show_failure("Unable to allocate parameter name.");
+                                                                                goto parameter_operations;
+                                                                            }
+
                                                                         free(param_to_modify->parameter_name); // Free old name
-                                                                        param_to_modify->parameter_name = (char*)malloc(vector_size(new_name_vector) + 1);
-                                                                        memcpy(param_to_modify->parameter_name, new_name_vector->data, vector_size(new_name_vector));
-                                                                        param_to_modify->parameter_name[vector_size(new_name_vector)] = '\0'; // Null-terminate the string
+                                                                        param_to_modify->parameter_name = new_name;
                                                                     }
 
                                                             vector_destroy(new_name_vector); // Free the temporary vector
@@ -1623,16 +1352,21 @@ void ui_profile_login(Student_Profile* profile)
 
                                                                 if(vector_size(new_weight_vector) > 0)
                                                                     {
-                                                                        char new_weight_string[vector_size(new_weight_vector) + 1];
-                                                                        memcpy(new_weight_string, new_weight_vector->data, vector_size(new_weight_vector));
-                                                                        new_weight_string[vector_size(new_weight_vector)] = '\0';
+                                                                        new_weight_string = vector_chars_duplicate(new_weight_vector);
+                                                                        if(new_weight_string == NULL)
+                                                                            {
+                                                                                vector_destroy(new_weight_vector);
+                                                                                ui_show_failure("Unable to allocate parameter weight.");
+                                                                                goto parameter_operations;
+                                                                            }
                                                                         float new_weight = atof(new_weight_string);
+                                                                        free(new_weight_string);
                                                                         if (new_weight >= 0) { param_to_modify->weight = new_weight; }
                                                                     }
 
                                                             vector_destroy(new_weight_vector); // Free the temporary vector
 
-                                                            system("cls");
+                                                            ui_clear_screen();
 
                                                             goto parameter_operations;
                                                         }
@@ -1655,35 +1389,44 @@ void ui_profile_login(Student_Profile* profile)
                                                                 }
 
                                                             printf("\n    Press any key to continue . . .");
-                                                            getch();
+                                                            ui_read_key();
 
-                                                            system("cls");
+                                                            ui_clear_screen();
 
                                                             goto parameter_operations;
                                                         }
 
                                                     case 3: /// Delete Parameter
                                                         {
+                                                            const char** parameter_options;
+
                                                             if(vector_size(component->parameters) == 0)
                                                                 {
                                                                     ui_show_failure("No parameters to delete.");
                                                                     goto parameter_operations;
                                                                 }
 
-                                                            char* parameter_options[vector_size(component->parameters)];
+                                                            parameter_options = option_array_create(vector_size(component->parameters));
+                                                            if(parameter_options == NULL)
+                                                                {
+                                                                    ui_show_failure("Unable to allocate parameter options.");
+                                                                    goto parameter_operations;
+                                                                }
+
                                                             for(i = 0; i < vector_size(component->parameters); i++)
                                                                 {
                                                                     parameter_options[i] = ((Course_Parameter*)vector_at(component->parameters, i))->parameter_name;
                                                                 }
 
-                                                            selected = ui_selection_array("[Delete Parameter]", "Select a Parameter to Delete:", NUMERIC, vector_size(component->parameters), parameter_options);
+                                                            selected = ui_selection_array("[Delete Parameter]", "Select a Parameter to Delete:", UI_LIST_NUMERIC, vector_size(component->parameters), parameter_options);
+                                                            free((void*)parameter_options);
                                                             course_parameter_destroy((Course_Parameter*)vector_remove(component->parameters, selected));
                                                             goto parameter_operations;
                                                         }
 
                                                     case 4: /// Back
                                                         {
-                                                            system("cls");
+                                                            ui_clear_screen();
                                                             break;
                                                         }
                                                 }
@@ -1705,7 +1448,7 @@ void ui_profile_login(Student_Profile* profile)
 
                         selected = ui_selection("[Profile Settings]",
                                                 "Select a parameter:",
-                                                LOWS_ALPHABETICAL, 2,
+                                                UI_LIST_LOWS_ALPHABETICAL, 2,
                                                 "Set Grade Goal",
                                                 "Back");
 
@@ -1713,19 +1456,26 @@ void ui_profile_login(Student_Profile* profile)
                             {
                                 case 0: /// Set Grade Goal
                                     {
+                                        char* goal_str;
+
                                         ui_header();
                                         ui_show_profile_header(profile);
                                         Vector* string = vector_create(sizeof(char));
                                         ui_field_input("Enter New Grade Goal", string);
 
-                                        char goal_str[vector_size(string) + 1];
-                                        memcpy(goal_str, (char*)vector_at(string, 0), string->element_size * vector_size(string));
-                                        goal_str[vector_size(string)] = '\0';
-
-                                        profile->goal = atof(goal_str);
+                                        goal_str = vector_chars_duplicate(string);
                                         vector_destroy(string);
 
-                                        system("cls");
+                                        if(goal_str == NULL)
+                                            {
+                                                ui_show_failure("Unable to allocate goal buffer.");
+                                                break;
+                                            }
+
+                                        profile->goal = atof(goal_str);
+                                        free(goal_str);
+
+                                        ui_clear_screen();
                                         break;
                                     }
 
@@ -1763,9 +1513,9 @@ void ui_profile_login(Student_Profile* profile)
                                 }
 
                             printf("\n    Press any key to continue . . .");
-                            getch();
+                            ui_read_key();
 
-                            system("cls");
+                            ui_clear_screen();
                             break;
                         }
 
@@ -1815,20 +1565,15 @@ Student_Profile create_new_profile()
 
                 // Convert vectors (C++ strings) to c-strings
 
-                memcpy(profile.first_name, (char*)vector_at(first_name_vector, 0), first_name_vector->element_size*vector_size(first_name_vector));
-                profile.first_name[vector_size(first_name_vector)] = '\0';
+                vector_chars_to_cstring(first_name_vector, profile.first_name);
 
-                memcpy(profile.middle_name, (char*)vector_at(middle_name_vector, 0), middle_name_vector->element_size*vector_size(middle_name_vector));
-                profile.middle_name[vector_size(middle_name_vector)] = '\0';
+                vector_chars_to_cstring(middle_name_vector, profile.middle_name);
 
-                memcpy(profile.last_name, (char*)vector_at(last_name_vector, 0), last_name_vector->element_size*vector_size(last_name_vector));
-                profile.last_name[vector_size(last_name_vector)] = '\0';
+                vector_chars_to_cstring(last_name_vector, profile.last_name);
 
-                memcpy(profile.student_number, (char*)vector_at(student_number_vector, 0), student_number_vector->element_size*vector_size(student_number_vector));
-                profile.student_number[vector_size(student_number_vector)] = '\0';
+                vector_chars_to_cstring(student_number_vector, profile.student_number);
 
-                memcpy(profile.degree_program, (char*)vector_at(degree_program_vector, 0), degree_program_vector->element_size*vector_size(degree_program_vector));
-                profile.degree_program[vector_size(degree_program_vector)] = '\0';
+                vector_chars_to_cstring(degree_program_vector, profile.degree_program);
 
                 // Free C++-strings
                 vector_destroy(first_name_vector);
@@ -1844,12 +1589,12 @@ Student_Profile create_new_profile()
 
                 profile_confirmation: // Wait for user input
 
-                    ch = getch();
+                    ch = ui_read_key();
 
-                    if(ch == ENTER){break;}
-                    else if (ch == ESCAPE)
+                    if(ch == UI_KEY_ENTER){break;}
+                    else if (ch == UI_KEY_ESCAPE)
                         {
-                            system("cls");
+                            ui_clear_screen();
 
                             // Free allocated memory before restarting
                             student_profile_reset(&profile);
@@ -1868,7 +1613,7 @@ Student_Profile create_new_profile()
 
         selected = ui_selection("[Profile]",
                                 "Select Grade Goal:",
-                                NUMERIC, 6,
+                                UI_LIST_NUMERIC, 6,
                                 "Passing [3.00]",
                                 "Average [2.38]",
                                 "Cum Laude [1.75]",
@@ -1880,7 +1625,7 @@ Student_Profile create_new_profile()
             {
                 profile.goal = GRADE_GOALS[selected];
 
-                system("cls");
+                ui_clear_screen();
 
                 ui_header();
                 ui_show_profile_header(&profile);
@@ -1889,7 +1634,9 @@ Student_Profile create_new_profile()
             }
         else
             {
-                system("cls");
+                char* c_str;
+
+                ui_clear_screen();
 
                 ui_header();
                 ui_show_profile_header(&profile);
@@ -1899,26 +1646,31 @@ Student_Profile create_new_profile()
                     printf("\n");
 
                     // Convert input from vector to float
-                    char c_str[vector_size(string) + 1]; // Temporary buffer to hold the string
-                    memcpy(c_str, (char*)vector_at(string, 0), string->element_size*vector_size(string));
-                    c_str[vector_size(string)] = '\0';
-
-                    profile.goal = atof(c_str); // Convert to float
+                    c_str = vector_chars_duplicate(string); // Temporary buffer to hold the string
 
                 // Free the unit input vector
                 vector_destroy(string);
+
+                if(c_str == NULL)
+                    {
+                        ui_show_failure("Unable to allocate goal buffer.");
+                        goto get_goal;
+                    }
+
+                    profile.goal = atof(c_str); // Convert to float
+                    free(c_str);
             }
 
         printf("    Is the above information correct? (Press ENTER to confirm, ESC to re-enter)\n");
 
         goal_confirmation: // Wait for user input
 
-            ch = getch();
+            ch = ui_read_key();
 
-            if(ch == ENTER){system("cls"); return profile;}
-            else if(ch == ESCAPE)
+            if(ch == UI_KEY_ENTER){ui_clear_screen(); return profile;}
+            else if(ch == UI_KEY_ESCAPE)
                 {
-                    system("cls");
+                    ui_clear_screen();
                     goto get_goal;
                 }
             else{goto goal_confirmation;}

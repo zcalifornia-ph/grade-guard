@@ -47,6 +47,8 @@ typedef enum UiColor {
 
 void ui_fullscreen(void);
 void ui_set_font_size(void);
+void ui_clear_screen(void);
+int ui_read_key(void);
 
 void ui_header(void);
 void ui_box(const char* heading, const char* message);

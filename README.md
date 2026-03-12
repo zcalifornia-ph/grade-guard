@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.1.5
+    Version: v0.1.6
     <br />
-    Status: source-backed Windows console grade-tracking prototype with extracted utility and domain lifecycle modules, documented ownership semantics, and focused regression coverage
+    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, and UI/platform modules; manual Bolt 3.1 console verification is still pending
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-5-docs.md"><strong>Version 0.1.5 notes</strong></a>
+    <a href="docs/version-0-1-6-docs.md"><strong>Version 0.1.6 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -68,8 +68,9 @@ The current implementation now ships in-repository under `grade-guard/main.c` an
 The repository also now includes a root `REQUIREMENTS.md` that defines the next engineering phase: splitting the monolithic source into `header/` and `source/` modules while fixing verified defects.
 That planning baseline is now accompanied by `docs/unit-1-bolt-1-1-monolith-inventory.md`, which maps the current monolith responsibilities and proposed destination modules before extraction starts, and `docs/unit-1-bolt-1-2-module-scaffold.md`, which records the initial public interface scaffold for that refactor.
 Unit 2 now includes the first real extracted utility and domain modules: the shared vector implementation in `grade-guard/source/vector.c`, the domain/lifecycle implementation in `grade-guard/source/models.c`, and their public APIs in `grade-guard/header/vector.h` plus `grade-guard/header/models.h`.
+Unit 3 has now started with a shared UI/platform layer: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c` own the reusable Windows console primitives, and `grade-guard/main.c` now consumes that interface instead of defining those helpers inline.
 Focused regression coverage now exists for both shared layers through `grade-guard/tests/vector_test.c` and `grade-guard/unit-tests/models_lifecycle_test.c`.
-Detailed version notes for this lifecycle extraction update are available in `docs/version-0-1-5-docs.md`.
+Detailed version notes for this UI extraction update are available in `docs/version-0-1-6-docs.md`, and the Bolt-specific boundary/evidence note lives in `docs/unit-3-bolt-3-1-ui-console.md`.
 
 ### What Grade Guard Does
 
@@ -84,8 +85,9 @@ Detailed version notes for this lifecycle extraction update are available in `do
 ### Current Limitations
 
 - Windows-only for now because the program depends on `windows.h` and `conio.h`.
-- Most behavior still lives in a single large C source file, so modularity and testability are still limited even after the vector and models extractions.
+- Most workflow behavior still lives in a single large C source file, so modularity and testability are still limited even after the vector, models, and `ui_console` extractions.
 - Uses manual CSV persistence with no automated migration, release pipeline, or broad end-to-end automated test suite yet; automated coverage currently targets the shared vector layer and the domain lifecycle helpers.
+- Windows console redraw, clear-screen, fullscreen, and raw-key behavior still depend on the active host, so UI-layer changes require a live manual acceptance run in addition to compile/test checks.
 - Local binaries and editor scratch files still require manual cleanup before committing.
 
 ### Current Planning Baseline
@@ -98,7 +100,8 @@ Detailed version notes for this lifecycle extraction update are available in `do
 - Scaffold inventory: `docs/unit-1-bolt-1-2-module-scaffold.md`
 - Vector extraction note: `docs/unit-2-bolt-2-1-vector.md`
 - Domain lifecycle extraction note: `docs/unit-2-bolt-2-2-models.md`
-- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, and Bolt 2.2 domain lifecycle extraction are all recorded with evidence; Unit 1 and Unit 2 human review gates are still pending.
+- UI/platform extraction note: `docs/unit-3-bolt-3-1-ui-console.md`
+- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, and Bolt 2.2 domain lifecycle extraction are recorded with evidence, and Bolt 3.1 implementation plus non-interactive validation are now documented; Unit 1 and Unit 2 review gates plus the Unit 3 manual UI acceptance/review gate are still pending.
 
 ### Current Implementation Snapshot
 
@@ -106,9 +109,10 @@ Detailed version notes for this lifecycle extraction update are available in `do
 - Planned extraction scaffold: `grade-guard/header/` and `grade-guard/source/`
 - Shared utility module: `grade-guard/header/vector.h` and `grade-guard/source/vector.c`
 - Shared domain module: `grade-guard/header/models.h` and `grade-guard/source/models.c`
+- Shared UI/platform module: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c`
 - Focused regression harnesses: `grade-guard/tests/vector_test.c` and `grade-guard/unit-tests/models_lifecycle_test.c`
 - Unit-test support: `grade-guard/unit-tests/test_framework.h`
-- UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, and screen clearing / cursor positioning helpers
+- UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, and shared screen/cursor/field/selection helpers behind `ui_console`
 - Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
 - Academic model: lecture components plus optional laboratory components, each with weighted parameters and activity scores
 - Persistence model: numbered CSV files written in the working directory when the user exits from the main menu
@@ -141,13 +145,13 @@ cd grade-guard
 Build with GCC or MinGW-w64:
 
 ```sh
-gcc -I grade-guard/header grade-guard/main.c grade-guard/source/vector.c grade-guard/source/models.c -o grade-guard.exe
+gcc -I grade-guard/header grade-guard/main.c grade-guard/source/vector.c grade-guard/source/models.c grade-guard/source/ui_console.c -o grade-guard.exe
 ```
 
 Build with MSVC Developer PowerShell:
 
 ```powershell
-cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\vector.c grade-guard\source\models.c /Fe:grade-guard.exe
+cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\vector.c grade-guard\source\models.c grade-guard\source\ui_console.c /Fe:grade-guard.exe
 ```
 
 Run the application:
@@ -197,7 +201,9 @@ You can also reopen an existing profile by student number through the `Select Pr
 - [ ] Finalize Unit 1 / Bolt 1.1 review and confirm the proposed module boundaries.
 - [ ] Review the new `grade-guard/header/` and `grade-guard/source/` scaffold and confirm the public interfaces are stable enough for extraction.
 - [ ] Review and approve Unit 2 data ownership and lifecycle rules now that Bolt 2.2 is implemented.
-- [ ] Start Unit 3 / Bolt 3.1 by extracting console primitives into the planned UI/platform module.
+- [ ] Manually verify Unit 3 / Bolt 3.1 console navigation, field editing, and redraw behavior in a live Windows console session.
+- [ ] Review Unit 3 UI boundaries and confirm `ui_console` is the stable platform layer for later work.
+- [ ] Start Unit 3 / Bolt 3.2 by extracting profile, course, and activity workflow controllers.
 - [ ] Improve validation for score entry, CSV parsing, and edge cases.
 - [ ] Expand the `grade-guard/unit-tests/` framework beyond shared vector and lifecycle coverage.
 - [ ] Expand grade summaries and reporting for easier semester planning.

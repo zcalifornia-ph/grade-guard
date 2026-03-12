@@ -1,6 +1,27 @@
 # Changelog
 
-Status: source-backed Windows console grade-tracking prototype with extracted utility and domain lifecycle modules.
+Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, and UI/platform modules.
+
+## v0.1.6 - 2026-03-12
+
+### Added or Changed
+- Updated `README.md` from `v0.1.5` to `v0.1.6`, refreshed the project status/progress snapshot, documented the extracted `ui_console` layer, corrected the standard build commands to link `grade-guard/source/ui_console.c`, and pointed the release trail at the new Bolt 3.1 notes.
+- Implemented the shared UI/platform module in `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c`, including screen setup, cursor and color helpers, selection widgets, field input, failure display, and the new `ui_clear_screen()` / `ui_read_key()` wrappers that isolate direct console calls.
+- Updated `grade-guard/main.c` to consume `header/ui_console.h` instead of defining raw Windows console helpers inline, and switched UI call sites to the typed `UI_LIST_*` and `UI_KEY_*` interface exported by the shared console module.
+- Corrected a few inherited console-layer defects during extraction, including the `UI_SELECTION_BOTH` fallthrough path, selection-label alphabet wraparound, and a stray variadic initialization misuse inside the menu widget.
+- Added `docs/unit-3-bolt-3-1-ui-console.md` to document the Bolt 3.1 contract, Windows-specific dependencies, UI-boundary review notes, and current validation evidence.
+- Added `docs/version-0-1-6-docs.md` with the fuller explanation of the UI extraction, release impact, remaining manual-acceptance gap, and updated verification trail.
+- Updated `CONTRIBUTING.md` because the standard build now links `ui_console.c`, and UI-touching changes now explicitly require a live Windows console verification pass in addition to compile/test checks.
+- Kept `REQUIREMENTS.md`, `SECURITY.md`, and `CODE_OF_CONDUCT.md` unchanged because Bolt 3.1 manual acceptance has not yet been executed and this version does not alter project governance or security-reporting policy.
+
+### For Deletion
+- `grade-guard/build-smoke/` (compile-smoke object output directory from earlier scaffold validation; still present locally and should not be committed).
+- `grade-guard/grade-guard-warning-build.exe` (local warning-check build artifact; still present locally and should not be committed).
+- `grade-guard/bolt-2-1-main.exe` (local acceptance-build artifact generated while validating Bolt 2.1).
+- `grade-guard/bolt-2-2-main.exe` (local acceptance-build artifact generated while validating Bolt 2.2).
+- `grade-guard/bolt-3-1-main.exe` (local acceptance-build artifact generated while validating Bolt 3.1).
+- `grade-guard/tests/vector_test.exe` (local vector regression-test binary generated while validating Bolts 2.1 through 3.1).
+- `grade-guard/unit-tests/models_lifecycle_test.exe` (local lifecycle regression-test binary generated while validating Bolts 2.2 and 3.1).
 
 ## v0.1.5 - 2026-03-12
 

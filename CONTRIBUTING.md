@@ -1,7 +1,7 @@
 # Contributing
 
 Thanks for contributing to Grade Guard.
-This repository currently centers on a Windows console C application in `grade-guard/main.c`, plus the root documentation that explains how the project is used and maintained.
+This repository currently centers on a Windows console C application rooted at `grade-guard/main.c`, plus extracted shared modules under `grade-guard/header/` and `grade-guard/source/` and the root documentation that explains how the project is used and maintained.
 
 ## Before You Start
 
@@ -17,7 +17,7 @@ Example setup with GCC or MinGW-w64:
 ```sh
 git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
-gcc -I grade-guard/header grade-guard/main.c grade-guard/source/vector.c grade-guard/source/models.c -o grade-guard.exe
+gcc -I grade-guard/header grade-guard/main.c grade-guard/source/vector.c grade-guard/source/models.c grade-guard/source/ui_console.c -o grade-guard.exe
 .\grade-guard.exe
 ```
 
@@ -26,7 +26,7 @@ Example setup with MSVC Developer PowerShell:
 ```powershell
 git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
-cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\vector.c grade-guard\source\models.c /Fe:grade-guard.exe
+cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\vector.c grade-guard\source\models.c grade-guard\source\ui_console.c /Fe:grade-guard.exe
 .\grade-guard.exe
 ```
 
@@ -46,11 +46,12 @@ Before opening a pull request, manually verify the main user flows:
 1. Build the executable successfully.
 2. Run the focused vector regression test if your change touches the shared vector module.
 3. Run the lifecycle regression test if your change touches `models`, nested ownership, or create/delete flows.
-4. Create a new profile.
-5. Add at least one course and define its parameters.
-6. Record at least one activity score.
-7. View the resulting grade breakdown.
-8. Exit and confirm the profile data persists to numbered CSV files in the working directory.
+4. Run a live Windows console verification pass if your change touches `ui_console`, menu navigation, field editing, screen redraw logic, or other keyboard-driven UI behavior.
+5. Create a new profile.
+6. Add at least one course and define its parameters.
+7. Record at least one activity score.
+8. View the resulting grade breakdown.
+9. Exit and confirm the profile data persists to numbered CSV files in the working directory.
 
 ## Pull Requests
 
