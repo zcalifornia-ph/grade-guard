@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.0.1
+    Version: v0.1.0
     <br />
-    Status: early prototype / academic project baseline
+    Status: first source-backed prototype / Windows-only academic codebase
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-0-1-docs.md"><strong>Version 0.0.1 notes</strong></a>
+    <a href="docs/version-0-1-0-docs.md"><strong>Version 0.1.0 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -62,8 +62,8 @@
 Grade Guard began as a CMSC 18 final project at the University of the Philippines Mindanao.
 It is designed to help students monitor their academic progress on a per-semester basis by modeling courses, assessment categories, activity scores, and goal grades inside a text-based interface.
 
-The current implementation lives in `grade-guard/main.c` and uses a weighted-average approach to estimate student standing from the scores and course weights entered by the user.
-Detailed version notes for this baseline are available in `docs/version-0-0-1-docs.md`.
+The current implementation now ships in-repository under `grade-guard/main.c` and uses a weighted-average approach to estimate student standing from the scores and course weights entered by the user.
+Detailed version notes for this source-backed baseline are available in `docs/version-0-1-0-docs.md`.
 
 ### What Grade Guard Does
 
@@ -73,12 +73,22 @@ Detailed version notes for this baseline are available in `docs/version-0-0-1-do
 - Records activity scores under each parameter and displays grade details in the console interface.
 - Stores profile data in numbered CSV files such as `0.csv`, `1.csv`, and so on in the working directory.
 - Supports grade-goal selection, including custom targets.
+- Calculates a predicted GWA and the percentage progress toward the selected grade goal.
 
 ### Current Limitations
 
 - Windows-only for now because the program depends on `windows.h` and `conio.h`.
 - Implemented as a single large C source file, so modularity and testability are still limited.
 - Uses manual CSV persistence with no automated migration, validation suite, or release pipeline yet.
+- Local binaries and editor scratch files still require manual cleanup before committing.
+
+### Current Implementation Snapshot
+
+- Entry point: `grade-guard/main.c`
+- UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, and screen clearing / cursor positioning helpers
+- Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
+- Academic model: lecture components plus optional laboratory components, each with weighted parameters and activity scores
+- Persistence model: numbered CSV files written in the working directory when the user exits from the main menu
 
 ### Built With
 
@@ -123,11 +133,15 @@ Run the application:
 .\grade-guard.exe
 ```
 
+When you exit through the main menu, the program writes profile data back to numbered CSV files in the current working directory.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Usage
 
 Typical flow inside the application:
+
+Navigation is keyboard-driven through the Windows console UI and relies on arrow keys plus `Enter`.
 
 1. Select `New Profile` and enter your student details.
 2. Add one or more courses, including units and whether a course has a laboratory component.
@@ -143,7 +157,7 @@ You can also reopen an existing profile by student number through the `Select Pr
 
 ## Roadmap
 
-- [ ] Split `grade-guard/main.c` into smaller modules with clearer ownership.
+- [ ] Split `grade-guard/main.c` into smaller modules with clearer ownership and a cleaner build/output layout.
 - [ ] Improve validation for score entry, CSV parsing, and edge cases.
 - [ ] Add a repeatable build workflow and automated verification.
 - [ ] Expand grade summaries and reporting for easier semester planning.
