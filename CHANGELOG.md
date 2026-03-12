@@ -2,6 +2,24 @@
 
 Status: source-backed Windows console grade-tracking prototype.
 
+## v0.1.4 - 2026-03-12
+
+### Added or Changed
+- Updated `README.md` from `v0.1.3` to `v0.1.4`, refreshed the project status/progress snapshot, and pointed the root documentation at the extracted vector module plus its regression harness.
+- Implemented the shared vector module in `grade-guard/header/vector.h` and `grade-guard/source/vector.c`, and removed the duplicate live vector implementation from `grade-guard/main.c`.
+- Added `grade-guard/tests/vector_test.c` with repeatable regression coverage for create, push, pop, remove, resize, and indexed access across value and pointer storage cases.
+- Added `docs/unit-2-bolt-2-1-vector.md` to document the Bolt 2.1 contract, vector ownership rules, failure behavior, review notes, and acceptance evidence.
+- Added `docs/version-0-1-4-docs.md` with the fuller explanation of the Bolt 2.1 vector extraction, validation evidence, build/test workflow updates, and remaining review gates.
+- Updated `CONTRIBUTING.md` and `REQUIREMENTS.md` to reflect the new vector-linked build flow, targeted regression check, and Bolt 2.1 completion state.
+- Kept `SECURITY.md` and `CODE_OF_CONDUCT.md` unchanged because this version changes implementation structure and contributor verification guidance, not security reporting or community-governance policy.
+
+### For Deletion
+- `grade-guard/build-smoke/` (compile-smoke object output directory from earlier scaffold validation; still present locally and should not be committed).
+- `grade-guard/grade-guard-warning-build.exe` (local warning-check build artifact; still present locally and should not be committed).
+- `grade-guard/main.exe` (local compiled binary artifact; still present locally and should not be committed).
+- `grade-guard/bolt-2-1-main.exe` (local acceptance-build artifact generated while validating Bolt 2.1).
+- `grade-guard/tests/vector_test.exe` (local regression-test binary generated while validating Bolt 2.1).
+
 ## v0.1.3 - 2026-03-12
 
 ### Added or Changed

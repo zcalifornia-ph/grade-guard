@@ -30,6 +30,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "header/vector.h"
+
 /** --- --- --- Constant Definitions --- --- --- **/
 
 /// Selection List Type
@@ -88,29 +90,6 @@ const char* upper_alphabet = "ABCDEFGHIJKLMNOPQRTSUVWXYZ";
 */
 
 const float GRADE_GOALS[] = {3.00, 2.375, 1.75, 1.45, 1.20};
-
-/** --- --- --- Vector Typedef and Related Functions (Dynamic Arrays) --- --- --- **/
-
-typedef struct Vector {
-    void* data;    // Pointer to the array data (treated as byte array)
-    size_t element_size; // Size of each element
-    size_t capacity;    // Allocated memory (number of elements)
-    size_t size;        // Number of elements in use
-} Vector;
-
-// Vector Function Prototypes
-
-Vector* vector_create(size_t element_size);
-void vector_destroy(Vector* vec);
-
-void vector_push_back(Vector* vec, const void* element);
-void vector_pop_back(Vector* vec);
-void* vector_remove(Vector* vec, size_t index);
-
-void* vector_at(Vector* vec, size_t index);
-
-size_t vector_size(Vector* vec);
-void vector_resize(Vector* vec, size_t new_capacity);
 
 /** --- --- --- GradeGuard Typedef Declarations and Related Functions --- --- --- **/
 
@@ -332,100 +311,6 @@ int main()
             }
 
         return 0;
-    }
-
-/** --- --- --- Vector Functions --- --- --- **/
-
-Vector* vector_create(size_t element_size)
-    {
-        Vector* vec = (Vector*)malloc(sizeof(Vector));
-        if(!vec){return NULL;} // attempt to allocate memory for vector pointer, return NULL upon failure
-
-        vec->element_size = element_size;
-        vec->capacity = 4; // initialize vector data
-        vec->size = 0;
-
-        vec->data = malloc(element_size * vec->capacity);
-        if(!vec->data){free(vec); return NULL;} // attempt to allocate memory for vector data, deallocate vector pointer and return NULL upon failure
-
-        return vec;
-    }
-
-void vector_destroy(Vector* vec)
-    {
-        if(vec){free(vec->data); free(vec); vec = NULL;} // free vector and make pointer into NULL
-    }
-
-void vector_push_back(Vector* vec, const void* element)
-    {
-        if(vec->size == vec->capacity){vector_resize(vec, vec->capacity * 2);} // double vector capacity if vector is fulls
-
-        memcpy((BYTE*)vec->data + vec->size * vec->element_size, element, vec->element_size);
-        vec->size++; // copy element data to vector and increment size
-    }
-
-void vector_pop_back(Vector* vec)
-    {
-        if(vec->size > 0)
-            {
-                vec->size--;
-
-                /*
-
-                    simply reduce size to pop back
-
-                    this does not result in memory leaks as
-                    the existing data will be overwritten upon new push_back
-                    and is eventually deallocated upon calling vector_destroy()
-
-                */
-            }
-    }
-
-void* vector_remove(Vector* vec, size_t index)
-    {
-        if(index >= vec->size)
-            {
-                return NULL; // Return NULL if the index is out of bounds
-            }
-
-        // Allocate memory for the removed element
-        void* removed_element = malloc(vec->element_size);
-
-        if(!removed_element)
-            {
-                return NULL; // Return NULL if memory allocation fails
-            }
-
-        // Copy the element to be removed
-        memcpy(removed_element, (BYTE*)vec->data + index * vec->element_size, vec->element_size);
-
-        // Shift elements to fill the gap
-        memmove((BYTE*)vec->data + index * vec->element_size,
-                (BYTE*)vec->data + (index + 1) * vec->element_size,
-                (vec->size - index - 1) * vec->element_size);
-
-        // Decrease the size of the vector
-        vec->size--;
-
-        return removed_element; // Return the pointer to the removed element
-    }
-
-void* vector_at(Vector* vec, size_t index)
-    {
-        if(index >= vec->size){return NULL;} // return a BYTE pointer containing the element data
-        return (BYTE*)vec->data + index * vec->element_size;
-    }
-
-size_t vector_size(Vector* vec){return vec->size;}
-
-void vector_resize(Vector* vec, size_t new_capacity)
-    {
-        void* new_data = realloc(vec->data, vec->element_size * new_capacity);
-        if(!new_data){return;} // attempt to reallocate, if it fails, do not update data
-
-        vec->data = new_data;
-        vec->capacity = new_capacity;
     }
 
 /** --- --- --- Struct Functions --- --- --- **/

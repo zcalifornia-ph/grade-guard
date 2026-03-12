@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.1.3
+    Version: v0.1.4
     <br />
-    Status: first source-backed prototype / Windows-only academic codebase with Unit 1 interface scaffold and smoke-verified module layout
+    Status: first source-backed prototype / Windows-only academic codebase with the first extracted utility module, documented vector ownership semantics, and focused regression coverage
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-3-docs.md"><strong>Version 0.1.3 notes</strong></a>
+    <a href="docs/version-0-1-4-docs.md"><strong>Version 0.1.4 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -67,7 +67,8 @@ It is designed to help students monitor their academic progress on a per-semeste
 The current implementation now ships in-repository under `grade-guard/main.c` and uses a weighted-average approach to estimate student standing from the scores and course weights entered by the user.
 The repository also now includes a root `REQUIREMENTS.md` that defines the next engineering phase: splitting the monolithic source into `header/` and `source/` modules while fixing verified defects.
 That planning baseline is now accompanied by `docs/unit-1-bolt-1-1-monolith-inventory.md`, which maps the current monolith responsibilities and proposed destination modules before extraction starts, and `docs/unit-1-bolt-1-2-module-scaffold.md`, which records the initial public interface scaffold for that refactor.
-Detailed version notes for this scaffold update are available in `docs/version-0-1-3-docs.md`.
+Unit 2 now includes the first real extracted module: the shared vector implementation in `grade-guard/source/vector.c`, backed by the public API in `grade-guard/header/vector.h` and a focused regression test in `grade-guard/tests/vector_test.c`.
+Detailed version notes for this vector extraction update are available in `docs/version-0-1-4-docs.md`.
 
 ### What Grade Guard Does
 
@@ -82,8 +83,8 @@ Detailed version notes for this scaffold update are available in `docs/version-0
 ### Current Limitations
 
 - Windows-only for now because the program depends on `windows.h` and `conio.h`.
-- Implemented as a single large C source file, so modularity and testability are still limited.
-- Uses manual CSV persistence with no automated migration, validation suite, or release pipeline yet.
+- Most behavior still lives in a single large C source file, so modularity and testability are still limited even after the vector extraction.
+- Uses manual CSV persistence with no automated migration, release pipeline, or broad automated test suite yet; automated coverage currently targets the vector module only.
 - Local binaries and editor scratch files still require manual cleanup before committing.
 
 ### Current Planning Baseline
@@ -94,12 +95,14 @@ Detailed version notes for this scaffold update are available in `docs/version-0
 - Planning artifact: `REQUIREMENTS.md`
 - Architecture inventory: `docs/unit-1-bolt-1-1-monolith-inventory.md`
 - Scaffold inventory: `docs/unit-1-bolt-1-2-module-scaffold.md`
-- Progress checkpoint: Bolt 1.1 responsibility mapping and Bolt 1.2 scaffold creation plus compile-smoke evidence are recorded; Unit 1 human review is still pending before those Bolts can be closed.
+- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, and Bolt 2.1 vector extraction are all recorded with evidence; Unit 1 and Unit 2 human review gates are still pending.
 
 ### Current Implementation Snapshot
 
 - Entry point: `grade-guard/main.c`
 - Planned extraction scaffold: `grade-guard/header/` and `grade-guard/source/`
+- Shared utility module: `grade-guard/header/vector.h` and `grade-guard/source/vector.c`
+- Focused regression harness: `grade-guard/tests/vector_test.c`
 - UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, and screen clearing / cursor positioning helpers
 - Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
 - Academic model: lecture components plus optional laboratory components, each with weighted parameters and activity scores
@@ -133,13 +136,13 @@ cd grade-guard
 Build with GCC or MinGW-w64:
 
 ```sh
-gcc grade-guard/main.c -o grade-guard.exe
+gcc -I grade-guard/header grade-guard/main.c grade-guard/source/vector.c -o grade-guard.exe
 ```
 
 Build with MSVC Developer PowerShell:
 
 ```powershell
-cl /TC grade-guard\main.c /Fe:grade-guard.exe
+cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\vector.c /Fe:grade-guard.exe
 ```
 
 Run the application:
@@ -149,6 +152,13 @@ Run the application:
 ```
 
 When you exit through the main menu, the program writes profile data back to numbered CSV files in the current working directory.
+
+Run the focused vector regression test with GCC:
+
+```sh
+gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/tests/vector_test.c grade-guard/source/vector.c -o grade-guard/tests/vector_test.exe
+.\grade-guard/tests/vector_test.exe
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -174,9 +184,9 @@ You can also reopen an existing profile by student number through the `Select Pr
 
 - [ ] Finalize Unit 1 / Bolt 1.1 review and confirm the proposed module boundaries.
 - [ ] Review the new `grade-guard/header/` and `grade-guard/source/` scaffold and confirm the public interfaces are stable enough for extraction.
-- [ ] Begin moving `vector`, `models`, and other owned implementation out of `grade-guard/main.c` into the new scaffold without breaking current behavior.
+- [ ] Finish Unit 2 / Bolt 2.2 by moving domain types and lifecycle helpers into `models`.
 - [ ] Improve validation for score entry, CSV parsing, and edge cases.
-- [ ] Add a repeatable build workflow and automated verification.
+- [ ] Establish the broader unit-test framework promised in `REQUIREMENTS.md`, beyond the focused vector regression harness.
 - [ ] Expand grade summaries and reporting for easier semester planning.
 - [ ] Evaluate cross-platform terminal support after the Windows prototype stabilizes.
 
