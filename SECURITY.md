@@ -9,7 +9,8 @@ Security concerns may include memory-safety issues, unsafe file handling, CSV pa
 
 | Version | Supported |
 | --- | --- |
-| 0.0.x | yes |
+| 0.1.x | yes |
+| 0.0.x | no |
 | Unreleased snapshots older than the current repository state | no |
 
 ## Reporting a Vulnerability

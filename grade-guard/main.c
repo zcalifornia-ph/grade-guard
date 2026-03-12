@@ -30,6 +30,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "header/models.h"
 #include "header/vector.h"
 
 /** --- --- --- Constant Definitions --- --- --- **/
@@ -91,54 +92,7 @@ const char* upper_alphabet = "ABCDEFGHIJKLMNOPQRTSUVWXYZ";
 
 const float GRADE_GOALS[] = {3.00, 2.375, 1.75, 1.45, 1.20};
 
-/** --- --- --- GradeGuard Typedef Declarations and Related Functions --- --- --- **/
-
 typedef unsigned long u_long;
-
-typedef struct Activities
-    {
-        char* activity_name;
-        float score, total_score;
-    } Activities;
-
-typedef struct Course_Parameter
-    {
-        char* parameter_name;
-        float weight, percentage; // weight is how heavy it is for that course, percentage is the actual average of all its activities
-        Vector* activities; // Activities vector
-    } Course_Parameter;
-
-typedef struct Course_Component
-    {
-        float weight, grade;
-        Vector* parameters; // Course_Parameter vector
-    } Course_Component;
-
-typedef struct Course
-    {
-        char* name;
-        float units;
-        bool lab_flag;
-        Course_Component lecture, lab; // Course_Components
-    } Course;
-
-typedef struct Student_Profile
-    {
-        char* first_name;
-        char* middle_name;
-        char* last_name;
-        char* student_number;
-        char* degree_program;
-        Vector* courses; // Course vector
-        float predicted_gwa;
-        float goal;
-    } Student_Profile;
-
-void activities_destroy(Activities* activity);
-void course_parameter_destroy(Course_Parameter* parameter);
-void course_component_destroy(Course_Component* component);
-void course_destroy(Course* course);
-void student_profile_destroy(Student_Profile* profile);
 
 /** --- --- --- Function Prototypes --- --- --- **/
 
@@ -259,7 +213,7 @@ int main()
                                     printf("\n");
 
                                     // Convert input from vector to float
-                                    char student_number[vector_size(string)]; // Temporary buffer to hold the string
+                                    char student_number[vector_size(string) + 1]; // Temporary buffer to hold the string
                                     memcpy(student_number, (char*)vector_at(string, 0), string->element_size*vector_size(string));
                                     student_number[vector_size(string)] = '\0';
 
@@ -311,106 +265,6 @@ int main()
             }
 
         return 0;
-    }
-
-/** --- --- --- Struct Functions --- --- --- **/
-
-/// Activities Destructor
-void activities_destroy(Activities* activity)
-    {
-        if(activity)
-            {
-                free(activity->activity_name); // Free the activity name
-
-                free(activity);
-            }
-    }
-
-/// Course Parameter Destructor
-void course_parameter_destroy(Course_Parameter* parameter)
-    {
-        size_t i;
-
-        if(parameter)
-            {
-                free(parameter->parameter_name); // Free the parameter name
-
-                if(parameter->activities)
-                    {
-                        for(i = 0; i < vector_size(parameter->activities); i++)
-                            {
-                                Activities* activity = vector_at(parameter->activities, i);
-                                activities_destroy(activity); // Free each activity
-                            }
-
-                        vector_destroy(parameter->activities); // Free the vector itself
-                    }
-
-                free(parameter);
-            }
-    }
-
-/// Course Component Destructor
-void course_component_destroy(Course_Component* component)
-    {
-        size_t i;
-
-        if(component)
-            {
-                if(component->parameters)
-                    {
-                        for(i = 0; i < vector_size(component->parameters); i++)
-                            {
-                                Course_Parameter* parameter = vector_at(component->parameters, i);
-                                course_parameter_destroy(parameter); // Free each parameter
-                            }
-
-                        vector_destroy(component->parameters); // Free the vector itself
-                    }
-
-                //free(component); no need to free component as every Course_Component is never dynamically allocated within the program
-            }
-    }
-
-/// Course Destructor
-void course_destroy(Course* course)
-    {
-        if(course)
-            {
-                free(course->name); // Free the course name
-
-                // Free the lecture and lab components
-                course_component_destroy(&course->lecture);
-                if(course->lab_flag){course_component_destroy(&course->lab);}
-
-                free(course);
-            }
-    }
-
-/// Student Profile Destructor
-void student_profile_destroy(Student_Profile* profile)
-    {
-        size_t i;
-
-        if(profile)
-            {
-                free(profile->first_name); // Free first name
-                free(profile->middle_name); // Free middle name
-                free(profile->last_name); // Free last name
-                free(profile->student_number); // Free student number
-                free(profile->degree_program); // Free degree program
-
-                if(profile->courses)
-                    {
-                        for(i = 0; i < vector_size(profile->courses); i++)
-                            {
-                                Course* course = vector_at(profile->courses, i);
-                                course_destroy(course); // Free each course
-                            }
-
-                        vector_destroy(profile->courses); // Free the vector itself
-                    }
-            }
     }
 
 /** --- --- --- TUI Output Functions --- --- --- **/
@@ -818,10 +672,11 @@ void save_student_profile_to_csv(Student_Profile* profile, char* dir)
 Student_Profile load_student_profile_from_csv(char* dir)
     {
         Student_Profile profile;
-        profile.courses = vector_create(sizeof(Course)); // Initialize courses vector
-        profile.first_name = profile.middle_name = profile.last_name = profile.student_number = profile.degree_program = NULL;
-        profile.predicted_gwa = 0.0;
-        profile.goal = 0.0;
+
+        if(!student_profile_init(&profile))
+            {
+                return profile;
+            }
 
         FILE* file = fopen(dir, "r");
         if(!file)
@@ -854,24 +709,33 @@ Student_Profile load_student_profile_from_csv(char* dir)
         fgets(line, sizeof(line), file); // Skip "Courses" line
         while (fgets(line, sizeof(line), file) && strcmp(line, "\n") != 0) {
             Course course;
+            if(!course_init(&course))
+                {
+                    fclose(file);
+                    return profile;
+                }
             course.name = strdup(strtok(line, ","));
             course.units = atof(strtok(NULL, ","));
             course.lab_flag = (strcmp(strtok(NULL, ","), "Yes") == 0);
-            course.lecture.parameters = vector_create(sizeof(Course_Parameter));
-            course.lab.parameters = vector_create(sizeof(Course_Parameter));
 
             // Read lecture parameters
             fgets(line, sizeof(line), file); // Skip "Lecture Parameters" line
             while (fgets(line, sizeof(line), file) && strcmp(line, "Lab Parameters\n") != 0 && strcmp(line, "\n") != 0) {
                 Course_Parameter param;
+                if(!course_parameter_init(&param))
+                    {
+                        course_reset(&course);
+                        fclose(file);
+                        return profile;
+                    }
                 param.parameter_name = strdup(strtok(line, ","));
                 param.weight = atof(strtok(NULL, ","));
                 param.percentage = atof(strtok(NULL, ","));
-                param.activities = vector_create(sizeof(Activities));
 
                 // Read activities
                 while (fgets(line, sizeof(line), file) && strcmp(line, "\n") != 0) {
                     Activities activity;
+                    activities_init(&activity);
                     activity.activity_name = strdup(strtok(line, ","));
                     activity.score = atof(strtok(NULL, ","));
                     activity.total_score = atof(strtok(NULL, ","));
@@ -886,14 +750,20 @@ Student_Profile load_student_profile_from_csv(char* dir)
                 fgets(line, sizeof(line), file); // Skip "Lab Parameters" line
                 while (fgets(line, sizeof(line), file) && strcmp(line, "\n") != 0) {
                     Course_Parameter param;
+                    if(!course_parameter_init(&param))
+                        {
+                            course_reset(&course);
+                            fclose(file);
+                            return profile;
+                        }
                     param.parameter_name = strdup(strtok(line, ","));
                     param.weight = atof(strtok(NULL, ","));
                     param.percentage = atof(strtok(NULL, ","));
-                    param.activities = vector_create(sizeof(Activities));
 
                     // Read activities
                     while (fgets(line, sizeof(line), file) && strcmp(line, "\n") != 0) {
                         Activities activity;
+                        activities_init(&activity);
                         activity.activity_name = strdup(strtok(line, ","));
                         activity.score = atof(strtok(NULL, ","));
                         activity.total_score = atof(strtok(NULL, ","));
@@ -1036,16 +906,18 @@ void ui_field_input(const char* field_name, Vector* field_vector)
 void input_courses(Student_Profile* profile)
     {
         char c;
-        Course new_course;
-        new_course.name = NULL; // Initialize course name
-        new_course.units = 0.0; // Initialize course units
-        new_course.lab_flag = false; // Initialize lab flag
-        new_course.lecture = (Course_Component){0.0, 0.0, vector_create(sizeof(Course_Parameter))}; // Initialize lecture component
-
         Vector* string;
 
         while(true)
             {
+                Course new_course;
+
+                if(!course_init(&new_course))
+                    {
+                        ui_show_failure("Unable to allocate course storage.");
+                        break;
+                    }
+
                 // Clear the console and redraw the input field
                 system("cls");
                 ui_header();
@@ -1087,7 +959,7 @@ void input_courses(Student_Profile* profile)
                     ui_field_input("Enter Course Units", string); // Use the existing input function for course units
 
                     // Convert input from vector to float
-                    char unit_input[vector_size(string)]; // Temporary buffer to hold the string
+                    char unit_input[vector_size(string) + 1]; // Temporary buffer to hold the string
                     memcpy(unit_input, (char*)vector_at(string, 0), string->element_size*vector_size(string));
                     unit_input[vector_size(string)] = '\0';
 
@@ -1106,7 +978,6 @@ void input_courses(Student_Profile* profile)
                     if(c == 'y' || c == 'y')
                         {
                             new_course.lab_flag = true;
-                            new_course.lab = (Course_Component){0.0, 0.0, vector_create(sizeof(Course_Parameter))}; // Initialize lab component
                         }
                     else if(c == 'n' || c == 'n'){new_course.lab_flag = false;}
                     else{goto confirmation;}
@@ -1332,7 +1203,7 @@ void ui_profile_login(Student_Profile* profile)
                                                 selected = ui_selection_array("[Add Activity]", "Select a Course:", NUMERIC, vector_size(profile->courses), options);
 
                                                 Course* course = (Course*)vector_at(profile->courses, selected);
-                                                Course_Component component;
+                                                Course_Component* component;
 
                                                     if(course->lab_flag)
                                                         {
@@ -1341,14 +1212,14 @@ void ui_profile_login(Student_Profile* profile)
 
                                                             component = ui_selection_array("[Add Activity]",
                                                                                            "Select a Component:",
-                                                                                           NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? course->lecture:course->lab;
+                                                                                           NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
                                                         }
-                                                    else{component = course->lecture;}
+                                                    else{component = &course->lecture;}
 
                                                 ui_header();
                                                 ui_show_profile_header(profile);
 
-                                                if(!vector_size(component.parameters))
+                                                if(!vector_size(component->parameters))
                                                     {
                                                         printf("    [Add Activity]\n\n");
 
@@ -1359,21 +1230,22 @@ void ui_profile_login(Student_Profile* profile)
                                                         break;
                                                     }
 
-                                                char* params[vector_size(component.parameters)];
+                                                char* params[vector_size(component->parameters)];
 
-                                                for(i = 0; i < vector_size(component.parameters); i++)
+                                                for(i = 0; i < vector_size(component->parameters); i++)
                                                     {
-                                                        params[i] = ((Course_Parameter*)vector_at(component.parameters,i))->parameter_name;
+                                                        params[i] = ((Course_Parameter*)vector_at(component->parameters,i))->parameter_name;
                                                     }
 
-                                                selected = ui_selection_array("[Add Activity]", "Select a Parameter:", BULLET_POINT, vector_size(component.parameters), params);
+                                                selected = ui_selection_array("[Add Activity]", "Select a Parameter:", BULLET_POINT, vector_size(component->parameters), params);
 
-                                                Course_Parameter* parameter = (Course_Parameter*)vector_at(component.parameters, selected);
+                                                Course_Parameter* parameter = (Course_Parameter*)vector_at(component->parameters, selected);
 
                                                 ui_header();
                                                 ui_show_profile_header(profile);
 
                                                 Activities activity;
+                                                activities_init(&activity);
 
                                                     string = vector_create(sizeof(char)); // allocate a string
                                                         ui_field_input("Enter Activity Name", string);
@@ -1388,7 +1260,7 @@ void ui_profile_login(Student_Profile* profile)
                                                         ui_field_input("Enter Total Score of Activity", string);
 
                                                         // Convert input from vector to int
-                                                        char total_score_cstr[vector_size(string)]; // Temporary buffer to hold the string
+                                                        char total_score_cstr[vector_size(string) + 1]; // Temporary buffer to hold the string
                                                         memcpy(total_score_cstr, (char*)vector_at(string, 0), string->element_size*vector_size(string));
                                                         total_score_cstr[vector_size(string)] = '\0';
 
@@ -1420,7 +1292,7 @@ void ui_profile_login(Student_Profile* profile)
                                             selected = ui_selection_array("[Add Score]", "Select a Course:", NUMERIC, vector_size(profile->courses), options);
 
                                             Course* course = (Course*)vector_at(profile->courses, selected);
-                                            Course_Component component;
+                                            Course_Component* component;
 
                                             if(course->lab_flag)
                                                 {
@@ -1429,14 +1301,14 @@ void ui_profile_login(Student_Profile* profile)
 
                                                     component = ui_selection_array("[Add Score]",
                                                                                    "Select a Component:",
-                                                                                   NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? course->lecture : course->lab;
+                                                                                   NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
                                                 }
                                             else
                                                 {
-                                                    component = course->lecture;
+                                                    component = &course->lecture;
                                                 }
 
-                                            if(!vector_size(component.parameters))
+                                            if(!vector_size(component->parameters))
                                                 {
                                                     ui_header();
                                                     ui_show_profile_header(profile);
@@ -1446,17 +1318,17 @@ void ui_profile_login(Student_Profile* profile)
                                                 }
 
                                             // Display parameters and allow user to select one
-                                            char* parameter_options[vector_size(component.parameters)];
-                                            for(i = 0; i < vector_size(component.parameters); i++)
+                                            char* parameter_options[vector_size(component->parameters)];
+                                            for(i = 0; i < vector_size(component->parameters); i++)
                                                 {
-                                                    parameter_options[i] = ((Course_Parameter*)vector_at(component.parameters, i))->parameter_name;
+                                                    parameter_options[i] = ((Course_Parameter*)vector_at(component->parameters, i))->parameter_name;
                                                 }
 
                                             ui_header();
                                             ui_show_profile_header(profile);
 
-                                            selected = ui_selection_array("[Add Score]", "Select a Parameter:", BULLET_POINT, vector_size(component.parameters), parameter_options);
-                                            Course_Parameter* parameter = (Course_Parameter*)vector_at(component.parameters, selected);
+                                            selected = ui_selection_array("[Add Score]", "Select a Parameter:", BULLET_POINT, vector_size(component->parameters), parameter_options);
+                                            Course_Parameter* parameter = (Course_Parameter*)vector_at(component->parameters, selected);
 
                                             // Display activities and allow user to select one to modify the score
                                             if(vector_size(parameter->activities) == 0)
@@ -1483,7 +1355,7 @@ void ui_profile_login(Student_Profile* profile)
                                             string = vector_create(sizeof(char));
                                             ui_field_input("Enter New Score", string);
 
-                                            char score_str[vector_size(string)];
+                                            char score_str[vector_size(string) + 1];
                                             memcpy(score_str, (char*)vector_at(string, 0), string->element_size * vector_size(string));
                                             score_str[vector_size(string)] = '\0';
 
@@ -1510,7 +1382,7 @@ void ui_profile_login(Student_Profile* profile)
 
                                             selected = ui_selection_array("[Delete Activity]", "Select a Course:", NUMERIC, vector_size(profile->courses), course_options);
                                             Course* course = (Course*)vector_at(profile->courses, selected);
-                                            Course_Component component;
+                                            Course_Component* component;
 
                                             if(course->lab_flag)
                                                 {
@@ -1519,31 +1391,31 @@ void ui_profile_login(Student_Profile* profile)
 
                                                     component = ui_selection_array("[Delete Activity]",
                                                                                    "Select a Component:",
-                                                                                   NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? course->lecture : course->lab;
+                                                                                   NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
                                                 }
                                             else
                                                 {
-                                                    component = course->lecture;
+                                                    component = &course->lecture;
                                                 }
 
                                             ui_header();
                                             ui_show_profile_header(profile);
 
-                                            if(!vector_size(component.parameters))
+                                            if(!vector_size(component->parameters))
                                                 {
                                                     ui_show_failure("No parameters available for this component.");
                                                     break;
                                                 }
 
                                             // Display activities for deletion
-                                            char* activity_options[vector_size(component.parameters)];
-                                            for(i = 0; i < vector_size(component.parameters); i++)
+                                            char* activity_options[vector_size(component->parameters)];
+                                            for(i = 0; i < vector_size(component->parameters); i++)
                                                 {
-                                                    activity_options[i] = ((Course_Parameter*)vector_at(component.parameters, i))->parameter_name;
+                                                    activity_options[i] = ((Course_Parameter*)vector_at(component->parameters, i))->parameter_name;
                                                 }
 
-                                            selected = ui_selection_array("[Delete Activity]", "Select a Parameter:", BULLET_POINT , vector_size(component.parameters), activity_options);
-                                            Course_Parameter* parameter = (Course_Parameter*)vector_at(component.parameters, selected);
+                                            selected = ui_selection_array("[Delete Activity]", "Select a Parameter:", BULLET_POINT , vector_size(component->parameters), activity_options);
+                                            Course_Parameter* parameter = (Course_Parameter*)vector_at(component->parameters, selected);
 
                                             ui_header();
                                             ui_show_profile_header(profile);
@@ -1557,7 +1429,7 @@ void ui_profile_login(Student_Profile* profile)
 
                                             selected = ui_selection_array("[Delete Activity]", "Select an Activity to Delete:", BULLET_POINT, vector_size(parameter->activities), activity_names);
 
-                                            activities_destroy(vector_remove(parameter->activities,selected));
+                                            activities_destroy((Activities*)vector_remove(parameter->activities,selected));
 
                                             break;
                                         }
@@ -1641,7 +1513,7 @@ void ui_profile_login(Student_Profile* profile)
 
                                             selected = ui_selection_array("[Set Course Parameters]", "Select a Course:", NUMERIC, vector_size(profile->courses), course_options);
                                             Course* course = (Course*)vector_at(profile->courses, selected);
-                                            Course_Component component;
+                                            Course_Component* component;
 
                                                if(course->lab_flag)
                                                     {
@@ -1650,11 +1522,11 @@ void ui_profile_login(Student_Profile* profile)
 
                                                         component = ui_selection_array("[Set Course Parameters]",
                                                                                        "Select a Component:",
-                                                                                       NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? course->lecture : course->lab;
+                                                                                       NUMERIC, 2, (char*[]){"Lecture","Laboratory"}) ? &course->lab : &course->lecture;
                                                     }
                                                 else
                                                     {
-                                                        component = course->lecture;
+                                                        component = &course->lecture;
                                                     }
 
                                             parameter_operations:
@@ -1678,24 +1550,34 @@ void ui_profile_login(Student_Profile* profile)
                                                 {
                                                     case 0: /// Add Parameter
                                                         {
-                                                            Course_Parameter* new_param = (Course_Parameter*)malloc(sizeof(Course_Parameter));
-                                                            new_param->activities = vector_create(sizeof(Activities)); // Create a vector for activities
+                                                            Course_Parameter new_param;
+
+                                                            if(!course_parameter_init(&new_param))
+                                                                {
+                                                                    ui_show_failure("Unable to allocate parameter storage.");
+                                                                    goto parameter_operations;
+                                                                }
 
                                                             // Input parameter name
                                                             Vector* name_vector = vector_create(sizeof(char));
                                                             ui_field_input("Enter parameter name", name_vector);
-                                                            new_param->parameter_name = (char*)malloc(vector_size(name_vector) + 1);
-                                                            memcpy(new_param->parameter_name, name_vector->data, vector_size(name_vector));
-                                                            new_param->parameter_name[vector_size(name_vector)] = '\0'; // Null-terminate the string
+                                                            new_param.parameter_name = (char*)malloc(vector_size(name_vector) + 1);
+                                                            memcpy(new_param.parameter_name, name_vector->data, vector_size(name_vector));
+                                                            new_param.parameter_name[vector_size(name_vector)] = '\0'; // Null-terminate the string
                                                             vector_destroy(name_vector); // Free the temporary vector
 
                                                             // Input weight
                                                             Vector* weight_vector = vector_create(sizeof(char));
                                                             ui_field_input("Enter weight (in percent)", weight_vector);
-                                                            new_param->weight = atof((char*)weight_vector->data); // Convert to float
+                                                            {
+                                                                char weight_string[vector_size(weight_vector) + 1];
+                                                                memcpy(weight_string, weight_vector->data, vector_size(weight_vector));
+                                                                weight_string[vector_size(weight_vector)] = '\0';
+                                                                new_param.weight = atof(weight_string);
+                                                            }
                                                             vector_destroy(weight_vector); // Free the temporary vector
 
-                                                            vector_push_back(component.parameters, new_param);
+                                                            vector_push_back(component->parameters, &new_param);
 
                                                             system("cls");
                                                             goto parameter_operations;
@@ -1703,20 +1585,20 @@ void ui_profile_login(Student_Profile* profile)
 
                                                     case 1: /// Modify Parameter
                                                         {
-                                                            if(vector_size(component.parameters) == 0)
+                                                            if(vector_size(component->parameters) == 0)
                                                                 {
                                                                     ui_show_failure("No parameters to modify.");
                                                                     goto parameter_operations;
                                                                 }
 
-                                                            char* parameter_options[vector_size(component.parameters)];
-                                                            for(i = 0; i < vector_size(component.parameters); i++)
+                                                            char* parameter_options[vector_size(component->parameters)];
+                                                            for(i = 0; i < vector_size(component->parameters); i++)
                                                                 {
-                                                                    parameter_options[i] = ((Course_Parameter*)vector_at(component.parameters, i))->parameter_name;
+                                                                    parameter_options[i] = ((Course_Parameter*)vector_at(component->parameters, i))->parameter_name;
                                                                 }
 
-                                                            selected = ui_selection_array("[Modify Parameter]", "Select a Parameter to Modify:", NUMERIC, vector_size(component.parameters), parameter_options);
-                                                            Course_Parameter* param_to_modify = (Course_Parameter*)vector_at(component.parameters, selected);
+                                                            selected = ui_selection_array("[Modify Parameter]", "Select a Parameter to Modify:", NUMERIC, vector_size(component->parameters), parameter_options);
+                                                            Course_Parameter* param_to_modify = (Course_Parameter*)vector_at(component->parameters, selected);
 
                                                             ui_header();
                                                             ui_show_profile_header(profile);
@@ -1741,7 +1623,10 @@ void ui_profile_login(Student_Profile* profile)
 
                                                                 if(vector_size(new_weight_vector) > 0)
                                                                     {
-                                                                        float new_weight = atof((char*)new_weight_vector->data);
+                                                                        char new_weight_string[vector_size(new_weight_vector) + 1];
+                                                                        memcpy(new_weight_string, new_weight_vector->data, vector_size(new_weight_vector));
+                                                                        new_weight_string[vector_size(new_weight_vector)] = '\0';
+                                                                        float new_weight = atof(new_weight_string);
                                                                         if (new_weight >= 0) { param_to_modify->weight = new_weight; }
                                                                     }
 
@@ -1754,7 +1639,7 @@ void ui_profile_login(Student_Profile* profile)
 
                                                     case 2: /// Print Parameters
                                                         {
-                                                            if(vector_size(component.parameters) == 0)
+                                                            if(vector_size(component->parameters) == 0)
                                                                 {
                                                                     ui_show_failure("No parameters to display.");
                                                                     goto parameter_operations;
@@ -1762,9 +1647,9 @@ void ui_profile_login(Student_Profile* profile)
 
                                                             printf("    Parameters for Course: %s\n\n", course->name);
 
-                                                            for(i = 0; i < vector_size(component.parameters); i++)
+                                                            for(i = 0; i < vector_size(component->parameters); i++)
                                                                 {
-                                                                    Course_Parameter* param = (Course_Parameter*)vector_at(component.parameters, i);
+                                                                    Course_Parameter* param = (Course_Parameter*)vector_at(component->parameters, i);
                                                                     printf("        Parameter Name: %s, Weight: %.2f\n",
                                                                            param->parameter_name, param->weight);
                                                                 }
@@ -1779,28 +1664,20 @@ void ui_profile_login(Student_Profile* profile)
 
                                                     case 3: /// Delete Parameter
                                                         {
-                                                            if(vector_size(component.parameters) == 0)
+                                                            if(vector_size(component->parameters) == 0)
                                                                 {
                                                                     ui_show_failure("No parameters to delete.");
                                                                     goto parameter_operations;
                                                                 }
 
-                                                            char* parameter_options[vector_size(component.parameters)];
-                                                            for(i = 0; i < vector_size(component.parameters); i++)
+                                                            char* parameter_options[vector_size(component->parameters)];
+                                                            for(i = 0; i < vector_size(component->parameters); i++)
                                                                 {
-                                                                    parameter_options[i] = ((Course_Parameter*)vector_at(component.parameters, i))->parameter_name;
+                                                                    parameter_options[i] = ((Course_Parameter*)vector_at(component->parameters, i))->parameter_name;
                                                                 }
 
-                                                            selected = ui_selection_array("[Delete Parameter]", "Select a Parameter to Delete:", NUMERIC, vector_size(component.parameters), parameter_options);
-                                                            Course_Parameter* param_to_delete = (Course_Parameter*)vector_at(component.parameters, selected);
-
-                                                            // Free the memory for the parameter being deleted
-                                                            free(param_to_delete->parameter_name);
-                                                            free(param_to_delete->activities); // Assuming activities is dynamically allocated
-                                                            free(param_to_delete); // Free the parameter itself
-
-                                                            // Remove the parameter from the vector
-                                                            vector_remove(component.parameters, selected);
+                                                            selected = ui_selection_array("[Delete Parameter]", "Select a Parameter to Delete:", NUMERIC, vector_size(component->parameters), parameter_options);
+                                                            course_parameter_destroy((Course_Parameter*)vector_remove(component->parameters, selected));
                                                             goto parameter_operations;
                                                         }
 
@@ -1841,7 +1718,7 @@ void ui_profile_login(Student_Profile* profile)
                                         Vector* string = vector_create(sizeof(char));
                                         ui_field_input("Enter New Grade Goal", string);
 
-                                        char goal_str[vector_size(string)];
+                                        char goal_str[vector_size(string) + 1];
                                         memcpy(goal_str, (char*)vector_at(string, 0), string->element_size * vector_size(string));
                                         goal_str[vector_size(string)] = '\0';
 
@@ -1906,13 +1783,10 @@ Student_Profile create_new_profile()
         // Loop for confirmation
         while(1)
             {
-                profile.first_name = NULL;
-                profile.middle_name = NULL; // initialize profile data
-                profile.last_name = NULL;
-                profile.student_number = NULL;
-                profile.degree_program = NULL;
-                profile.courses = vector_create(sizeof(Course)); // Create a vector for courses
-                profile.predicted_gwa = 0.0;
+                if(!student_profile_init(&profile))
+                    {
+                        return profile;
+                    }
 
                 Vector* first_name_vector = vector_create(sizeof(char));
                 Vector* middle_name_vector = vector_create(sizeof(char));
@@ -1978,12 +1852,7 @@ Student_Profile create_new_profile()
                             system("cls");
 
                             // Free allocated memory before restarting
-                            free(profile.first_name);
-                            free(profile.middle_name);
-                            free(profile.last_name);
-                            free(profile.student_number);
-                            free(profile.degree_program);
-                            vector_destroy(profile.courses);
+                            student_profile_reset(&profile);
 
                             continue;
                         }
@@ -2030,7 +1899,7 @@ Student_Profile create_new_profile()
                     printf("\n");
 
                     // Convert input from vector to float
-                    char c_str[vector_size(string)]; // Temporary buffer to hold the string
+                    char c_str[vector_size(string) + 1]; // Temporary buffer to hold the string
                     memcpy(c_str, (char*)vector_at(string, 0), string->element_size*vector_size(string));
                     c_str[vector_size(string)] = '\0';
 

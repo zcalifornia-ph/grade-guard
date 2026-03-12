@@ -1,6 +1,28 @@
 # Changelog
 
-Status: source-backed Windows console grade-tracking prototype.
+Status: source-backed Windows console grade-tracking prototype with extracted utility and domain lifecycle modules.
+
+## v0.1.5 - 2026-03-12
+
+### Added or Changed
+- Updated `README.md` from `v0.1.4` to `v0.1.5`, refreshed the project status/progress snapshot, and documented the new models-module build/test flow plus the Bolt 2.2 release notes link.
+- Implemented the domain lifecycle module in `grade-guard/header/models.h` and `grade-guard/source/models.c`, including `*_init()`, `*_reset()`, and `*_destroy()` helpers for `Activities`, `Course_Parameter`, `Course_Component`, `Course`, and `Student_Profile`.
+- Updated `grade-guard/main.c` to consume `header/models.h`, removed duplicate in-file domain declarations/destructors, and aligned create/add/delete flows with vector by-value ownership and `vector_remove()` cleanup semantics.
+- Added the first shared lifecycle test harness under `grade-guard/unit-tests/`, including `test_framework.h` and `models_lifecycle_test.c`, then validated it with a local executable acceptance run.
+- Added `docs/unit-2-bolt-2-2-models.md` to document the Bolt 2.2 ownership contract, nested invariants, review notes, and acceptance evidence.
+- Added `docs/version-0-1-5-docs.md` with the fuller explanation of the Bolt 2.2 extraction, repository-level release trail, validation commands, and remaining review gates.
+- Updated `REQUIREMENTS.md` so Unit 2 / Bolt 2.2 is checked off with dated implementation, validation, and review evidence; the Unit 2 human validation line remains open.
+- Updated `CONTRIBUTING.md` because contributors now need the `models.c` link step in normal builds and a second focused regression check when touching shared domain ownership flows.
+- Updated `SECURITY.md` to correct the supported-version table for the active `0.1.x` line; kept `CODE_OF_CONDUCT.md` unchanged because this version does not alter community-governance policy.
+
+### For Deletion
+- `grade-guard/build-smoke/` (compile-smoke object output directory from earlier scaffold validation; still present locally and should not be committed).
+- `grade-guard/grade-guard-warning-build.exe` (local warning-check build artifact; still present locally and should not be committed).
+- `grade-guard/main.exe` (local compiled binary artifact; still present locally and should not be committed).
+- `grade-guard/bolt-2-1-main.exe` (local acceptance-build artifact generated while validating Bolt 2.1).
+- `grade-guard/bolt-2-2-main.exe` (local acceptance-build artifact generated while validating Bolt 2.2).
+- `grade-guard/tests/vector_test.exe` (local vector regression-test binary generated while validating Bolts 2.1 and 2.2).
+- `grade-guard/unit-tests/models_lifecycle_test.exe` (local lifecycle regression-test binary generated while validating Bolt 2.2).
 
 ## v0.1.4 - 2026-03-12
 

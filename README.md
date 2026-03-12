@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.1.4
+    Version: v0.1.5
     <br />
-    Status: first source-backed prototype / Windows-only academic codebase with the first extracted utility module, documented vector ownership semantics, and focused regression coverage
+    Status: source-backed Windows console grade-tracking prototype with extracted utility and domain lifecycle modules, documented ownership semantics, and focused regression coverage
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-4-docs.md"><strong>Version 0.1.4 notes</strong></a>
+    <a href="docs/version-0-1-5-docs.md"><strong>Version 0.1.5 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -67,8 +67,9 @@ It is designed to help students monitor their academic progress on a per-semeste
 The current implementation now ships in-repository under `grade-guard/main.c` and uses a weighted-average approach to estimate student standing from the scores and course weights entered by the user.
 The repository also now includes a root `REQUIREMENTS.md` that defines the next engineering phase: splitting the monolithic source into `header/` and `source/` modules while fixing verified defects.
 That planning baseline is now accompanied by `docs/unit-1-bolt-1-1-monolith-inventory.md`, which maps the current monolith responsibilities and proposed destination modules before extraction starts, and `docs/unit-1-bolt-1-2-module-scaffold.md`, which records the initial public interface scaffold for that refactor.
-Unit 2 now includes the first real extracted module: the shared vector implementation in `grade-guard/source/vector.c`, backed by the public API in `grade-guard/header/vector.h` and a focused regression test in `grade-guard/tests/vector_test.c`.
-Detailed version notes for this vector extraction update are available in `docs/version-0-1-4-docs.md`.
+Unit 2 now includes the first real extracted utility and domain modules: the shared vector implementation in `grade-guard/source/vector.c`, the domain/lifecycle implementation in `grade-guard/source/models.c`, and their public APIs in `grade-guard/header/vector.h` plus `grade-guard/header/models.h`.
+Focused regression coverage now exists for both shared layers through `grade-guard/tests/vector_test.c` and `grade-guard/unit-tests/models_lifecycle_test.c`.
+Detailed version notes for this lifecycle extraction update are available in `docs/version-0-1-5-docs.md`.
 
 ### What Grade Guard Does
 
@@ -83,8 +84,8 @@ Detailed version notes for this vector extraction update are available in `docs/
 ### Current Limitations
 
 - Windows-only for now because the program depends on `windows.h` and `conio.h`.
-- Most behavior still lives in a single large C source file, so modularity and testability are still limited even after the vector extraction.
-- Uses manual CSV persistence with no automated migration, release pipeline, or broad automated test suite yet; automated coverage currently targets the vector module only.
+- Most behavior still lives in a single large C source file, so modularity and testability are still limited even after the vector and models extractions.
+- Uses manual CSV persistence with no automated migration, release pipeline, or broad end-to-end automated test suite yet; automated coverage currently targets the shared vector layer and the domain lifecycle helpers.
 - Local binaries and editor scratch files still require manual cleanup before committing.
 
 ### Current Planning Baseline
@@ -95,14 +96,18 @@ Detailed version notes for this vector extraction update are available in `docs/
 - Planning artifact: `REQUIREMENTS.md`
 - Architecture inventory: `docs/unit-1-bolt-1-1-monolith-inventory.md`
 - Scaffold inventory: `docs/unit-1-bolt-1-2-module-scaffold.md`
-- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, and Bolt 2.1 vector extraction are all recorded with evidence; Unit 1 and Unit 2 human review gates are still pending.
+- Vector extraction note: `docs/unit-2-bolt-2-1-vector.md`
+- Domain lifecycle extraction note: `docs/unit-2-bolt-2-2-models.md`
+- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, and Bolt 2.2 domain lifecycle extraction are all recorded with evidence; Unit 1 and Unit 2 human review gates are still pending.
 
 ### Current Implementation Snapshot
 
 - Entry point: `grade-guard/main.c`
 - Planned extraction scaffold: `grade-guard/header/` and `grade-guard/source/`
 - Shared utility module: `grade-guard/header/vector.h` and `grade-guard/source/vector.c`
-- Focused regression harness: `grade-guard/tests/vector_test.c`
+- Shared domain module: `grade-guard/header/models.h` and `grade-guard/source/models.c`
+- Focused regression harnesses: `grade-guard/tests/vector_test.c` and `grade-guard/unit-tests/models_lifecycle_test.c`
+- Unit-test support: `grade-guard/unit-tests/test_framework.h`
 - UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, and screen clearing / cursor positioning helpers
 - Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
 - Academic model: lecture components plus optional laboratory components, each with weighted parameters and activity scores
@@ -136,13 +141,13 @@ cd grade-guard
 Build with GCC or MinGW-w64:
 
 ```sh
-gcc -I grade-guard/header grade-guard/main.c grade-guard/source/vector.c -o grade-guard.exe
+gcc -I grade-guard/header grade-guard/main.c grade-guard/source/vector.c grade-guard/source/models.c -o grade-guard.exe
 ```
 
 Build with MSVC Developer PowerShell:
 
 ```powershell
-cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\vector.c /Fe:grade-guard.exe
+cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\vector.c grade-guard\source\models.c /Fe:grade-guard.exe
 ```
 
 Run the application:
@@ -158,6 +163,13 @@ Run the focused vector regression test with GCC:
 ```sh
 gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/tests/vector_test.c grade-guard/source/vector.c -o grade-guard/tests/vector_test.exe
 .\grade-guard/tests/vector_test.exe
+```
+
+Run the domain lifecycle regression test with GCC:
+
+```sh
+gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/unit-tests/models_lifecycle_test.c grade-guard/source/models.c grade-guard/source/vector.c -o grade-guard/unit-tests/models_lifecycle_test.exe
+.\grade-guard/unit-tests/models_lifecycle_test.exe
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -184,9 +196,10 @@ You can also reopen an existing profile by student number through the `Select Pr
 
 - [ ] Finalize Unit 1 / Bolt 1.1 review and confirm the proposed module boundaries.
 - [ ] Review the new `grade-guard/header/` and `grade-guard/source/` scaffold and confirm the public interfaces are stable enough for extraction.
-- [ ] Finish Unit 2 / Bolt 2.2 by moving domain types and lifecycle helpers into `models`.
+- [ ] Review and approve Unit 2 data ownership and lifecycle rules now that Bolt 2.2 is implemented.
+- [ ] Start Unit 3 / Bolt 3.1 by extracting console primitives into the planned UI/platform module.
 - [ ] Improve validation for score entry, CSV parsing, and edge cases.
-- [ ] Establish the broader unit-test framework promised in `REQUIREMENTS.md`, beyond the focused vector regression harness.
+- [ ] Expand the `grade-guard/unit-tests/` framework beyond shared vector and lifecycle coverage.
 - [ ] Expand grade summaries and reporting for easier semester planning.
 - [ ] Evaluate cross-platform terminal support after the Windows prototype stabilizes.
 

@@ -17,7 +17,7 @@ Example setup with GCC or MinGW-w64:
 ```sh
 git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
-gcc -I grade-guard/header grade-guard/main.c grade-guard/source/vector.c -o grade-guard.exe
+gcc -I grade-guard/header grade-guard/main.c grade-guard/source/vector.c grade-guard/source/models.c -o grade-guard.exe
 .\grade-guard.exe
 ```
 
@@ -26,7 +26,7 @@ Example setup with MSVC Developer PowerShell:
 ```powershell
 git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
-cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\vector.c /Fe:grade-guard.exe
+cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\vector.c grade-guard\source\models.c /Fe:grade-guard.exe
 .\grade-guard.exe
 ```
 
@@ -45,11 +45,12 @@ Before opening a pull request, manually verify the main user flows:
 
 1. Build the executable successfully.
 2. Run the focused vector regression test if your change touches the shared vector module.
-3. Create a new profile.
-4. Add at least one course and define its parameters.
-5. Record at least one activity score.
-6. View the resulting grade breakdown.
-7. Exit and confirm the profile data persists to numbered CSV files in the working directory.
+3. Run the lifecycle regression test if your change touches `models`, nested ownership, or create/delete flows.
+4. Create a new profile.
+5. Add at least one course and define its parameters.
+6. Record at least one activity score.
+7. View the resulting grade breakdown.
+8. Exit and confirm the profile data persists to numbered CSV files in the working directory.
 
 ## Pull Requests
 
