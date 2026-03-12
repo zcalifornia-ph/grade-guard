@@ -2,6 +2,19 @@
 
 Status: source-backed Windows console grade-tracking prototype.
 
+## v0.1.2 - 2026-03-12
+
+### Added or Changed
+- Added `docs/unit-1-bolt-1-1-monolith-inventory.md` to inventory `grade-guard/main.c`, define the module ownership charter, map top-level functions to destination modules, and document the thin-entry-point target for the future refactor.
+- Updated the local planning baseline in `REQUIREMENTS.md` so Unit 1 / Bolt 1.1 now records completed design, implementation, test, and docs subtasks plus evidence from the static coverage check; human review remains open.
+- Updated `README.md` from `v0.1.1` to `v0.1.2` and pointed the project overview at the new architecture inventory and Bolt 1.1 progress state.
+- Added `docs/version-0-1-2-docs.md` with the fuller explanation of the Unit 1 / Bolt 1.1 inventory, validation method, remaining review gate, and manual cleanup notes.
+- Kept `CONTRIBUTING.md`, `SECURITY.md`, and `CODE_OF_CONDUCT.md` unchanged because this version extends architecture-planning documentation rather than contributor policy, governance, or security reporting flow.
+
+### For Deletion
+- `grade-guard/grade-guard-warning-build.exe` (local warning-check binary generated during compile validation; should not be committed).
+- `grade-guard/main.exe` (local compiled binary artifact; should not be committed).
+
 ## v0.1.1 - 2026-03-12
 
 ### Added or Changed

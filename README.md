@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.1.1
+    Version: v0.1.2
     <br />
-    Status: first source-backed prototype / Windows-only academic codebase with refactor-planning baseline
+    Status: first source-backed prototype / Windows-only academic codebase with Unit 1 architecture partition baseline
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-1-docs.md"><strong>Version 0.1.1 notes</strong></a>
+    <a href="docs/version-0-1-2-docs.md"><strong>Version 0.1.2 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -66,7 +66,8 @@ It is designed to help students monitor their academic progress on a per-semeste
 
 The current implementation now ships in-repository under `grade-guard/main.c` and uses a weighted-average approach to estimate student standing from the scores and course weights entered by the user.
 The repository also now includes a root `REQUIREMENTS.md` that defines the next engineering phase: splitting the monolithic source into `header/` and `source/` modules while fixing verified defects.
-Detailed version notes for this planning update are available in `docs/version-0-1-1-docs.md`.
+That planning baseline is now accompanied by `docs/unit-1-bolt-1-1-monolith-inventory.md`, which maps the current monolith responsibilities and proposed destination modules before extraction starts.
+Detailed version notes for this planning update are available in `docs/version-0-1-2-docs.md`.
 
 ### What Grade Guard Does
 
@@ -91,6 +92,8 @@ Detailed version notes for this planning update are available in `docs/version-0
 - Entry-point target: keep `grade-guard/main.c` small and orchestration-only.
 - Defect focus: memory ownership, string/buffer safety, CSV parsing robustness, selection flow, and grade-calculation edge cases.
 - Planning artifact: `REQUIREMENTS.md`
+- Architecture inventory: `docs/unit-1-bolt-1-1-monolith-inventory.md`
+- Progress checkpoint: Unit 1 / Bolt 1.1 design, mapping, and documentation are recorded; human review is still pending before the Bolt can be closed.
 
 ### Current Implementation Snapshot
 
@@ -167,6 +170,8 @@ You can also reopen an existing profile by student number through the `Select Pr
 
 ## Roadmap
 
+- [ ] Finalize Unit 1 / Bolt 1.1 review and confirm the proposed module boundaries.
+- [ ] Create the initial `grade-guard/header/` and `grade-guard/source/` scaffold for Bolt 1.2.
 - [ ] Execute the `REQUIREMENTS.md` plan to split `grade-guard/main.c` into smaller modules with clearer ownership and a cleaner build/output layout.
 - [ ] Improve validation for score entry, CSV parsing, and edge cases.
 - [ ] Add a repeatable build workflow and automated verification.
