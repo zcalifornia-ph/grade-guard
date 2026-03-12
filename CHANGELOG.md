@@ -2,6 +2,19 @@
 
 Status: source-backed Windows console grade-tracking prototype.
 
+## v0.1.1 - 2026-03-12
+
+### Added or Changed
+- Added root `REQUIREMENTS.md` as the planning baseline for the next engineering phase, including intent, assumptions, user stories, NFRs, risk register, Units, Bolts, architecture, testing, and operations coverage for the Grade Guard refactor.
+- Updated `README.md` from `v0.1.0` to `v0.1.1` and documented that the repository now includes a requirements-driven plan for modularizing `grade-guard/main.c` into `header/` and `source/` directories.
+- Added `docs/version-0-1-1-docs.md` with a fuller explanation of the new requirements artifact, the intended refactor path, and the validation notes that informed the planning scope.
+- Kept `CONTRIBUTING.md`, `SECURITY.md`, and `CODE_OF_CONDUCT.md` unchanged because this version adds planning and release documentation rather than changing contributor policy or security reporting expectations.
+
+### For Deletion
+- `grade-guard/grade-guard-warning-build.exe` (local warning-check binary generated during compile validation; should not be committed).
+- `grade-guard/main.exe` (local compiled binary artifact; should not be committed).
+- `grade-guard/tempCodeRunnerFile.c` (editor-generated scratch file; should not be committed).
+
 ## v0.1.0 - 2026-03-12
 
 ### Added or Changed

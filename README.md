@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.1.0
+    Version: v0.1.1
     <br />
-    Status: first source-backed prototype / Windows-only academic codebase
+    Status: first source-backed prototype / Windows-only academic codebase with refactor-planning baseline
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-0-docs.md"><strong>Version 0.1.0 notes</strong></a>
+    <a href="docs/version-0-1-1-docs.md"><strong>Version 0.1.1 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -38,6 +38,8 @@
       <ul>
         <li><a href="#what-grade-guard-does">What Grade Guard Does</a></li>
         <li><a href="#current-limitations">Current Limitations</a></li>
+        <li><a href="#current-planning-baseline">Current Planning Baseline</a></li>
+        <li><a href="#current-implementation-snapshot">Current Implementation Snapshot</a></li>
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
@@ -63,7 +65,8 @@ Grade Guard began as a CMSC 18 final project at the University of the Philippine
 It is designed to help students monitor their academic progress on a per-semester basis by modeling courses, assessment categories, activity scores, and goal grades inside a text-based interface.
 
 The current implementation now ships in-repository under `grade-guard/main.c` and uses a weighted-average approach to estimate student standing from the scores and course weights entered by the user.
-Detailed version notes for this source-backed baseline are available in `docs/version-0-1-0-docs.md`.
+The repository also now includes a root `REQUIREMENTS.md` that defines the next engineering phase: splitting the monolithic source into `header/` and `source/` modules while fixing verified defects.
+Detailed version notes for this planning update are available in `docs/version-0-1-1-docs.md`.
 
 ### What Grade Guard Does
 
@@ -81,6 +84,13 @@ Detailed version notes for this source-backed baseline are available in `docs/ve
 - Implemented as a single large C source file, so modularity and testability are still limited.
 - Uses manual CSV persistence with no automated migration, validation suite, or release pipeline yet.
 - Local binaries and editor scratch files still require manual cleanup before committing.
+
+### Current Planning Baseline
+
+- Refactor target: split `grade-guard/main.c` into focused modules under `grade-guard/header/` and `grade-guard/source/`.
+- Entry-point target: keep `grade-guard/main.c` small and orchestration-only.
+- Defect focus: memory ownership, string/buffer safety, CSV parsing robustness, selection flow, and grade-calculation edge cases.
+- Planning artifact: `REQUIREMENTS.md`
 
 ### Current Implementation Snapshot
 
@@ -157,7 +167,7 @@ You can also reopen an existing profile by student number through the `Select Pr
 
 ## Roadmap
 
-- [ ] Split `grade-guard/main.c` into smaller modules with clearer ownership and a cleaner build/output layout.
+- [ ] Execute the `REQUIREMENTS.md` plan to split `grade-guard/main.c` into smaller modules with clearer ownership and a cleaner build/output layout.
 - [ ] Improve validation for score entry, CSV parsing, and edge cases.
 - [ ] Add a repeatable build workflow and automated verification.
 - [ ] Expand grade summaries and reporting for easier semester planning.
