@@ -2,6 +2,21 @@
 
 Status: source-backed Windows console grade-tracking prototype.
 
+## v0.1.3 - 2026-03-12
+
+### Added or Changed
+- Added the first module scaffold under `grade-guard/header/` and `grade-guard/source/`, including public headers and compile-safe placeholder source files for `app`, `vector`, `models`, `grade_calc`, `persistence`, `ui_console`, and `profile_controller`.
+- Added `docs/unit-1-bolt-1-2-module-scaffold.md` to document the Bolt 1.2 contract, module inventory, include-guard convention, dependency layering rules, shared-constants strategy, ownership rules, and compile-smoke evidence.
+- Updated `REQUIREMENTS.md` so Unit 1 / Bolt 1.2 now records completed design, implement, test, and docs subtasks plus dated smoke-build evidence; review and human validation remain open.
+- Updated `README.md` from `v0.1.2` to `v0.1.3` and refreshed the project status, progress checkpoint, and roadmap to reflect that the interface scaffold now exists and has been compile-checked.
+- Added `docs/version-0-1-3-docs.md` with the fuller explanation of the Bolt 1.2 scaffold, why the source tree remains placeholder-only, and what still requires human approval before extraction accelerates.
+- Kept `CONTRIBUTING.md`, `SECURITY.md`, and `CODE_OF_CONDUCT.md` unchanged because this version changes repository structure and release documentation, not contributor workflow, governance policy, or vulnerability reporting flow.
+
+### For Deletion
+- `grade-guard/build-smoke/` (compile-smoke object output directory generated while validating the new scaffold; should not be committed).
+- `grade-guard/grade-guard-warning-build.exe` (local warning-check binary artifact; should not be committed).
+- `grade-guard/main.exe` (local compiled binary artifact; should not be committed).
+
 ## v0.1.2 - 2026-03-12
 
 ### Added or Changed
