@@ -5,7 +5,8 @@
 
 Student_Profile create_new_profile(void);
 void input_courses(Student_Profile* profile);
-void ui_show_profile_header(const Student_Profile* profile);
+void ui_show_profile_header(Student_Profile* profile);
 void ui_profile_login(Student_Profile* profile);
+Student_Profile* profile_select_by_student_number(Vector* student_profiles);
 
 #endif

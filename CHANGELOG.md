@@ -1,6 +1,30 @@
 # Changelog
 
-Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, and UI/platform modules.
+Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, and workflow-controller modules.
+
+## v0.1.7 - 2026-03-13
+
+### Added or Changed
+- Updated `README.md` from `v0.1.6` to `v0.1.7`, refreshed the project status/progress snapshot, documented the extracted `app` and `profile_controller` runtime path, corrected the standard build commands to link every live module, and pointed the release trail at the new Bolt 3.2 notes.
+- Implemented the runtime app orchestrator in `grade-guard/source/app.c`, including console startup, numbered-profile bootstrap, top-level menu dispatch, and save/release behavior on exit.
+- Implemented the workflow-controller module in `grade-guard/source/profile_controller.c`, including profile selection, profile creation, course operations, parameter operations, activity operations, profile settings, and grade viewing with smaller controller helpers instead of the old monolithic `main.c` flow.
+- Updated `grade-guard/main.c` to the intended thin-entry-point shape so the executable now delegates directly to `app_run()`.
+- Wired the previously scaffolded runtime support modules in `grade-guard/source/grade_calc.c` and `grade-guard/source/persistence.c` into the live build so the extracted controller path no longer depends on placeholder implementations.
+- Added `docs/unit-3-bolt-3-2-workflow-controllers.md` to document the Bolt 3.2 contract, controller/user-flow map, review notes, and non-interactive validation evidence.
+- Added `docs/version-0-1-7-docs.md` with the fuller explanation of the controller extraction, runtime module graph, validation commands, and remaining manual-acceptance gap.
+- Updated `CONTRIBUTING.md` because the standard build now links the extracted `app`, `profile_controller`, `grade_calc`, and `persistence` modules, and workflow-touching changes now explicitly require a live Windows console verification pass.
+- Updated `REQUIREMENTS.md` to record Bolt 3.2 design/implementation/docs progress plus dated compile/regression evidence while keeping the manual workflow test, review, and human-validation gates open.
+- Kept `SECURITY.md` and `CODE_OF_CONDUCT.md` unchanged because this version does not alter vulnerability-reporting policy or community-governance rules.
+
+### For Deletion
+- `grade-guard/build-smoke/` (compile-smoke object output directory from earlier scaffold validation; still present locally and should not be committed).
+- `grade-guard/grade-guard-warning-build.exe` (local warning-check build artifact; still present locally and should not be committed).
+- `grade-guard/bolt-2-1-main.exe` (local acceptance-build artifact generated while validating Bolt 2.1).
+- `grade-guard/bolt-2-2-main.exe` (local acceptance-build artifact generated while validating Bolt 2.2).
+- `grade-guard/bolt-3-1-main.exe` (local acceptance-build artifact generated while validating Bolt 3.1).
+- `grade-guard/bolt-3-2-main.exe` (local acceptance-build artifact generated while validating Bolt 3.2).
+- `grade-guard/tests/vector_test.exe` (local vector regression-test binary generated while validating Bolts 2.1 through 3.2).
+- `grade-guard/unit-tests/models_lifecycle_test.exe` (local lifecycle regression-test binary generated while validating Bolts 2.2 through 3.2).
 
 ## v0.1.6 - 2026-03-12
 
