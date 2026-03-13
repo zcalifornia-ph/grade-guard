@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.1.7
+    Version: v0.1.8
     <br />
-    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, and workflow-controller modules; live Unit 3 console verification is still pending
+    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, workflow-controller, and versioned persistence-contract modules; Unit 4 schema approval and Bolt 4.2 hardening are still pending
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-7-docs.md"><strong>Version 0.1.7 notes</strong></a>
+    <a href="docs/version-0-1-8-docs.md"><strong>Version 0.1.8 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -69,8 +69,9 @@ The repository also now includes a root `REQUIREMENTS.md` that defines the next 
 That planning baseline is now accompanied by `docs/unit-1-bolt-1-1-monolith-inventory.md`, which maps the current monolith responsibilities and proposed destination modules before extraction starts, and `docs/unit-1-bolt-1-2-module-scaffold.md`, which records the initial public interface scaffold for that refactor.
 Unit 2 now includes the first real extracted utility and domain modules: the shared vector implementation in `grade-guard/source/vector.c`, the domain/lifecycle implementation in `grade-guard/source/models.c`, and their public APIs in `grade-guard/header/vector.h` plus `grade-guard/header/models.h`.
 Unit 3 now includes both the shared UI/platform layer and the extracted controller path: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c` own the reusable Windows console primitives, `grade-guard/source/app.c` owns startup and top-level menu orchestration, and `grade-guard/source/profile_controller.c` now owns the interactive profile/course/activity workflows.
-Focused regression coverage now exists for both shared layers through `grade-guard/tests/vector_test.c` and `grade-guard/unit-tests/models_lifecycle_test.c`.
-Detailed version notes for this workflow-controller extraction update are available in `docs/version-0-1-7-docs.md`, and the Bolt-specific boundary/evidence note lives in `docs/unit-3-bolt-3-2-workflow-controllers.md`.
+Unit 4 now includes the first hardened persistence boundary: `grade-guard/header/persistence.h` and `grade-guard/source/persistence.c` now expose a status-based save/load/list API, write the versioned `GRADE_GUARD_CSV,1` schema for new saves, and still load historical unversioned profile files through a documented compatibility path.
+Focused regression coverage now exists for the shared vector layer, the domain lifecycle layer, and the persistence contract through `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, and `grade-guard/unit-tests/persistence_contract_test.c`.
+Detailed version notes for this persistence-contract update are available in `docs/version-0-1-8-docs.md`, and the Bolt-specific boundary/evidence note lives in `docs/unit-4-bolt-4-1-persistence-contract.md`.
 
 ### What Grade Guard Does
 
@@ -86,7 +87,7 @@ Detailed version notes for this workflow-controller extraction update are availa
 
 - Windows-only for now because the program depends on `windows.h` and `conio.h`.
 - The main entry point is now thin, but the extracted interactive workflow path still depends on live console behavior and has not been covered by controller-level automated tests yet.
-- Uses manual CSV persistence with no automated migration, release pipeline, or broad end-to-end automated test suite yet; automated coverage currently targets the shared vector layer, the domain lifecycle helpers, and full-app compile smoke.
+- Uses local CSV persistence with a versioned save format and legacy load compatibility, but malformed-file hardening, release automation, and broad end-to-end coverage are still incomplete.
 - Windows console redraw, clear-screen, fullscreen, and raw-key behavior still depend on the active host, so Unit 3 workflow changes still require a live manual acceptance run in addition to compile/test checks.
 - Local binaries and editor scratch files still require manual cleanup before committing.
 
@@ -102,7 +103,8 @@ Detailed version notes for this workflow-controller extraction update are availa
 - Domain lifecycle extraction note: `docs/unit-2-bolt-2-2-models.md`
 - UI/platform extraction note: `docs/unit-3-bolt-3-1-ui-console.md`
 - Workflow-controller extraction note: `docs/unit-3-bolt-3-2-workflow-controllers.md`
-- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, Bolt 2.2 domain lifecycle extraction, and Bolt 3.2 controller extraction are recorded with evidence; Unit 1 and Unit 2 review gates plus the remaining Unit 3 live-console acceptance/review gate are still pending.
+- Persistence-contract note: `docs/unit-4-bolt-4-1-persistence-contract.md`
+- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, Bolt 2.2 domain lifecycle extraction, Bolt 3.2 controller extraction, and Bolt 4.1 persistence-contract hardening are recorded with evidence; Unit 1 and Unit 2 review gates plus the remaining Unit 4 schema-approval gate are still pending.
 
 ### Current Implementation Snapshot
 
@@ -115,12 +117,12 @@ Detailed version notes for this workflow-controller extraction update are availa
 - Grade engine module: `grade-guard/header/grade_calc.h` and `grade-guard/source/grade_calc.c`
 - Persistence module: `grade-guard/header/persistence.h` and `grade-guard/source/persistence.c`
 - Shared UI/platform module: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c`
-- Focused regression harnesses: `grade-guard/tests/vector_test.c` and `grade-guard/unit-tests/models_lifecycle_test.c`
+- Focused regression harnesses: `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, and `grade-guard/unit-tests/persistence_contract_test.c`
 - Unit-test support: `grade-guard/unit-tests/test_framework.h`
 - UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, and shared screen/cursor/field/selection helpers behind `ui_console`
 - Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
 - Academic model: lecture components plus optional laboratory components, each with weighted parameters and activity scores
-- Persistence model: numbered CSV files written in the working directory when the user exits from the main menu
+- Persistence model: numbered working-directory CSV files using the versioned `GRADE_GUARD_CSV,1` schema for new saves, with legacy load compatibility for historical files
 
 ### Built With
 
@@ -165,7 +167,7 @@ Run the application:
 .\grade-guard.exe
 ```
 
-When you exit through the main menu, the program writes profile data back to numbered CSV files in the current working directory.
+When you exit through the main menu, the program writes profile data back to numbered CSV files in the current working directory using the versioned `GRADE_GUARD_CSV,1` contract.
 
 Run the focused vector regression test with GCC:
 
@@ -179,6 +181,13 @@ Run the domain lifecycle regression test with GCC:
 ```sh
 gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/unit-tests/models_lifecycle_test.c grade-guard/source/models.c grade-guard/source/vector.c -o grade-guard/unit-tests/models_lifecycle_test.exe
 .\grade-guard/unit-tests/models_lifecycle_test.exe
+```
+
+Run the persistence contract regression test with GCC:
+
+```sh
+gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/unit-tests/persistence_contract_test.c grade-guard/source/persistence.c grade-guard/source/models.c grade-guard/source/vector.c -o grade-guard/unit-tests/persistence_contract_test.exe
+.\grade-guard/unit-tests/persistence_contract_test.exe
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -206,10 +215,10 @@ You can also reopen an existing profile by student number through the `Select Pr
 - [ ] Finalize Unit 1 / Bolt 1.1 review and confirm the proposed module boundaries.
 - [ ] Review the new `grade-guard/header/` and `grade-guard/source/` scaffold and confirm the public interfaces are stable enough for extraction.
 - [ ] Review and approve Unit 2 data ownership and lifecycle rules now that Bolt 2.2 is implemented.
-- [ ] Manually verify Unit 3 / Bolt 3.1 and Bolt 3.2 console navigation, field editing, redraw behavior, and create/select/update/delete workflows in a live Windows console session.
-- [ ] Review Unit 3 UI boundaries and confirm `ui_console`, `app`, and `profile_controller` are the stable platform/workflow layers for later work.
+- [ ] Review and approve the Unit 4 CSV schema, numbered-file contract, and legacy compatibility approach.
+- [ ] Implement Unit 4 / Bolt 4.2 malformed/truncated CSV hardening plus user-visible persistence failure behavior.
 - [ ] Improve validation for score entry, CSV parsing, and edge cases.
-- [ ] Expand the `grade-guard/unit-tests/` framework beyond shared vector and lifecycle coverage.
+- [ ] Expand the `grade-guard/unit-tests/` framework beyond shared vector, lifecycle, and persistence-contract coverage.
 - [ ] Expand grade summaries and reporting for easier semester planning.
 - [ ] Evaluate cross-platform terminal support after the Windows prototype stabilizes.
 

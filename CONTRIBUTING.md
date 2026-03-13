@@ -46,12 +46,13 @@ Before opening a pull request, manually verify the main user flows:
 1. Build the executable successfully.
 2. Run the focused vector regression test if your change touches the shared vector module.
 3. Run the lifecycle regression test if your change touches `models`, nested ownership, or create/delete flows.
-4. Run a live Windows console verification pass if your change touches `ui_console`, `app`, `profile_controller`, menu navigation, field editing, screen redraw logic, or other keyboard-driven UI behavior.
-5. Create a new profile.
-6. Add at least one course and define its parameters.
-7. Record at least one activity score.
-8. View the resulting grade breakdown.
-9. Exit and confirm the profile data persists to numbered CSV files in the working directory.
+4. Run the persistence contract regression test if your change touches `persistence`, CSV schema rules, numbered-profile discovery, or startup/shutdown save/load behavior.
+5. Run a live Windows console verification pass if your change touches `ui_console`, `app`, `profile_controller`, menu navigation, field editing, screen redraw logic, or other keyboard-driven UI behavior.
+6. Create a new profile.
+7. Add at least one course and define its parameters.
+8. Record at least one activity score.
+9. View the resulting grade breakdown.
+10. Exit and confirm the profile data persists to numbered CSV files in the working directory.
 
 ## Pull Requests
 

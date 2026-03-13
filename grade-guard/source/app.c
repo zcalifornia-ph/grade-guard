@@ -6,6 +6,19 @@
 
 #include <stdlib.h>
 
+static int app_push_profile(Vector* student_profiles, const Student_Profile* profile)
+{
+    size_t previous_size;
+
+    if (!student_profiles || !profile) {
+        return 0;
+    }
+
+    previous_size = vector_size(student_profiles);
+    vector_push_back(student_profiles, profile);
+    return vector_size(student_profiles) == previous_size + 1;
+}
+
 static void app_initialize_console(void)
 {
     ui_hide_caret();
@@ -15,55 +28,72 @@ static void app_initialize_console(void)
 
 static int app_load_profiles(Vector* student_profiles)
 {
+    Vector* profile_paths;
     size_t i;
 
     if (!student_profiles) {
         return 0;
     }
 
-    for (i = 0; ; i++) {
-        char* path;
+    profile_paths = persistence_list_profile_file_paths(".");
+    if (!profile_paths) {
+        return 0;
+    }
 
-        path = append_size_to_csv(i);
-        if (!path) {
+    for (i = 0; i < vector_size(profile_paths); i++) {
+        char** path;
+        Student_Profile profile;
+        PersistenceStatus status;
+
+        path = (char**)vector_at(profile_paths, i);
+        if (!path || !*path) {
+            persistence_destroy_profile_file_paths(profile_paths);
             return 0;
         }
 
-        if (!file_exists(path)) {
-            free(path);
-            break;
+        status = persistence_load_student_profile(*path, &profile);
+        if (status != PERSISTENCE_STATUS_OK) {
+            persistence_destroy_profile_file_paths(profile_paths);
+            return 0;
         }
 
-        {
-            Student_Profile profile = load_student_profile_from_csv(path);
-            vector_push_back(student_profiles, &profile);
+        if (!app_push_profile(student_profiles, &profile)) {
+            student_profile_reset(&profile);
+            persistence_destroy_profile_file_paths(profile_paths);
+            return 0;
         }
-
-        free(path);
     }
 
+    persistence_destroy_profile_file_paths(profile_paths);
     return 1;
 }
 
-static void app_save_profiles(Vector* student_profiles)
+static int app_save_profiles(Vector* student_profiles)
 {
     size_t i;
 
     if (!student_profiles) {
-        return;
+        return 0;
     }
 
     for (i = 0; i < vector_size(student_profiles); i++) {
         char* path;
+        PersistenceStatus status;
 
-        path = append_size_to_csv(i);
+        path = persistence_build_profile_path(".", i);
         if (!path) {
-            continue;
+            return 0;
         }
 
-        save_student_profile_to_csv((Student_Profile*)vector_at(student_profiles, i), path);
+        status = persistence_save_student_profile((Student_Profile*)vector_at(student_profiles, i), path);
         free(path);
+
+        if (status != PERSISTENCE_STATUS_OK) {
+            return 0;
+        }
     }
+
+    return 1;
 }
 
 static void app_destroy_profiles(Vector* student_profiles)
@@ -94,6 +124,7 @@ int app_run(void)
     app_initialize_console();
 
     if (!app_load_profiles(student_profiles)) {
+        ui_show_failure("Unable to load saved profiles.");
         app_destroy_profiles(student_profiles);
         return 1;
     }
@@ -138,7 +169,11 @@ int app_run(void)
             }
 
             case 2:
-                app_save_profiles(student_profiles);
+                if (!app_save_profiles(student_profiles)) {
+                    ui_show_failure("Unable to save all profiles.");
+                    break;
+                }
+
                 app_destroy_profiles(student_profiles);
                 return 0;
 
