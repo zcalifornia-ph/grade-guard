@@ -1,6 +1,35 @@
 # Changelog
 
-Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, workflow-controller, versioned persistence-contract modules, and repository-wide source attribution coverage.
+Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, and repository-wide source attribution coverage.
+
+## v0.1.10 - 2026-03-13
+
+### Added or Changed
+- Updated `README.md` from `v0.1.9` to `v0.1.10`, refreshed the top-level repository status/progress snapshot, documented the overflow-aware persistence-hardening behaviors, and pointed the release trail at the new `v0.1.10` notes plus the Bolt 4.2 boundary note.
+- Hardened `grade-guard/source/persistence.c` so CSV loads go through an overflow-aware record reader, oversized logical rows are rejected and flushed safely, and save-side serialization rejects profile, course, parameter, and activity rows that exceed the supported parser contract.
+- Updated `grade-guard/source/app.c` so persistence load/save failures now map to specific user-visible messages instead of collapsing into one generic failure path.
+- Expanded `grade-guard/unit-tests/persistence_contract_test.c` with negative coverage for blank lines, missing fields, invalid numeric tokens after partially parsed state, oversized load records, and oversized save rejection while keeping the existing round-trip and legacy compatibility checks in the same harness.
+- Added `docs/unit-4-bolt-4-2-persistence-hardening.md` to document the Bolt 4.2 error-handling matrix, record-size contract, validation evidence, and remaining review gate.
+- Added `docs/version-0-1-10-docs.md` with the fuller explanation of this release, validation commands, user-visible persistence behavior, and manual cleanup guidance for generated artifacts.
+- Kept `CONTRIBUTING.md`, `SECURITY.md`, and `CODE_OF_CONDUCT.md` unchanged because this version changes persistence behavior and release documentation, not contributor policy, vulnerability reporting, or community-governance rules.
+
+### For Deletion
+- `grade-guard/build-smoke/` (smoke-build output directory still present in the workspace).
+- `grade-guard/0.csv` (numbered profile output currently present in the working directory).
+- `grade-guard/bolt-4-1-main.exe` (local acceptance-build artifact from the prior Bolt 4.1 validation run).
+- `grade-guard/bolt-4-2-main.exe` (local acceptance-build artifact generated while validating Bolt 4.2).
+- `grade-guard/tests/vector_test.exe` (local vector regression-test binary present in the workspace).
+- `grade-guard/unit-tests/models_lifecycle_test.exe` (local lifecycle regression-test binary present in the workspace).
+- `grade-guard/unit-tests/persistence_contract_test.exe` (local persistence-contract regression binary present in the workspace).
+- `grade-guard/unit-tests/persistence-blank-lines.csv` (generated blank-line fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-invalid-number.csv` (generated invalid-number fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-legacy-fixture.csv` (generated legacy compatibility fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-missing-field.csv` (generated missing-field fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-oversized-record.csv` (generated oversized-record fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-shape-lecture.csv` (generated round-trip lecture-only output from the persistence regression).
+- `grade-guard/unit-tests/persistence-shape-lab.csv` (generated round-trip lab-course output from the persistence regression).
+- `grade-guard/unit-tests/persistence-shape-mixed.csv` (generated round-trip mixed-profile output from the persistence regression).
+- `grade-guard/unit-tests/persistence-runtime/` (generated numbered runtime-output directory from the persistence regression and currently containing `0.csv` and `1.csv`).
 
 ## v0.1.9 - 2026-03-13
 

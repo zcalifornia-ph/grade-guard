@@ -225,6 +225,7 @@ CSV persistence implementation for serializing, loading, and discovering student
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 
 #define PERSISTENCE_LINE_BUFFER_SIZE ((size_t)1024)
@@ -280,6 +281,64 @@ static void persistence_trim_newline(char* value)
         value[length - 1] = '\0';
         length--;
     }
+}
+
+static PersistenceStatus persistence_discard_remaining_line(FILE* file)
+{
+    int next_character;
+
+    if (!file) {
+        return PERSISTENCE_STATUS_INVALID_ARGUMENT;
+    }
+
+    do {
+        next_character = fgetc(file);
+    } while (next_character != '\n' && next_character != EOF);
+
+    return ferror(file) ? PERSISTENCE_STATUS_IO_ERROR : PERSISTENCE_STATUS_OK;
+}
+
+static PersistenceStatus persistence_read_record(FILE* file, char* line, size_t line_size, int* has_line)
+{
+    PersistenceStatus status;
+
+    if (!file || !line || line_size == 0 || !has_line) {
+        return PERSISTENCE_STATUS_INVALID_ARGUMENT;
+    }
+
+    if (!fgets(line, (int)line_size, file)) {
+        *has_line = 0;
+        return ferror(file) ? PERSISTENCE_STATUS_IO_ERROR : PERSISTENCE_STATUS_OK;
+    }
+
+    *has_line = 1;
+    if (!strchr(line, '\n') && !feof(file)) {
+        status = persistence_discard_remaining_line(file);
+        if (status != PERSISTENCE_STATUS_OK) {
+            return status;
+        }
+
+        line[0] = '\0';
+        return PERSISTENCE_STATUS_PARSE_ERROR;
+    }
+
+    return PERSISTENCE_STATUS_OK;
+}
+
+static int persistence_record_fits_buffer(const char* format, ...)
+{
+    va_list args;
+    int required_length;
+
+    if (!format) {
+        return 0;
+    }
+
+    va_start(args, format);
+    required_length = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+
+    return required_length >= 0 && (size_t)required_length < PERSISTENCE_LINE_BUFFER_SIZE;
 }
 
 static size_t persistence_split_line(char* line, char* fields[], size_t max_fields)
@@ -776,9 +835,15 @@ static PersistenceStatus persistence_parse_v1(FILE* file, Student_Profile* profi
     have_parameter = 0;
     status = PERSISTENCE_STATUS_OK;
 
-    while (fgets(line, sizeof(line), file)) {
+    while (1) {
+        int has_line;
         size_t field_count;
         PersistenceComponentKind component_kind;
+
+        status = persistence_read_record(file, line, sizeof(line), &has_line);
+        if (status != PERSISTENCE_STATUS_OK || !has_line) {
+            break;
+        }
 
         persistence_trim_newline(line);
         if (line[0] == '\0') {
@@ -936,12 +1001,30 @@ static PersistenceStatus persistence_parse_legacy(FILE* file, Student_Profile* p
     expecting_lecture_header = 0;
     status = PERSISTENCE_STATUS_OK;
 
-    if (!fgets(line, sizeof(line), file)) {
-        return PERSISTENCE_STATUS_PARSE_ERROR;
+    {
+        int has_line;
+
+        status = persistence_read_record(file, line, sizeof(line), &has_line);
+        if (status != PERSISTENCE_STATUS_OK) {
+            return status;
+        }
+
+        if (!has_line) {
+            return PERSISTENCE_STATUS_PARSE_ERROR;
+        }
     }
 
-    if (!fgets(line, sizeof(line), file)) {
-        return PERSISTENCE_STATUS_PARSE_ERROR;
+    {
+        int has_line;
+
+        status = persistence_read_record(file, line, sizeof(line), &has_line);
+        if (status != PERSISTENCE_STATUS_OK) {
+            return status;
+        }
+
+        if (!has_line) {
+            return PERSISTENCE_STATUS_PARSE_ERROR;
+        }
     }
 
     field_count = persistence_split_line(line, fields, PERSISTENCE_MAX_FIELDS);
@@ -950,8 +1033,17 @@ static PersistenceStatus persistence_parse_legacy(FILE* file, Student_Profile* p
         return status;
     }
 
-    if (!fgets(line, sizeof(line), file)) {
-        return PERSISTENCE_STATUS_OK;
+    {
+        int has_line;
+
+        status = persistence_read_record(file, line, sizeof(line), &has_line);
+        if (status != PERSISTENCE_STATUS_OK) {
+            return status;
+        }
+
+        if (!has_line) {
+            return PERSISTENCE_STATUS_OK;
+        }
     }
 
     persistence_trim_newline(line);
@@ -959,7 +1051,14 @@ static PersistenceStatus persistence_parse_legacy(FILE* file, Student_Profile* p
         return PERSISTENCE_STATUS_PARSE_ERROR;
     }
 
-    while (fgets(line, sizeof(line), file)) {
+    while (1) {
+        int has_line;
+
+        status = persistence_read_record(file, line, sizeof(line), &has_line);
+        if (status != PERSISTENCE_STATUS_OK || !has_line) {
+            break;
+        }
+
         persistence_trim_newline(line);
         if (line[0] == '\0') {
             continue;
@@ -1117,11 +1216,96 @@ static int persistence_profile_structure_valid(const Student_Profile* profile)
     return 1;
 }
 
+static int persistence_activity_text_supported(const Activities* activity)
+{
+    if (!activity || !persistence_text_supported(activity->activity_name)) {
+        return 0;
+    }
+
+    return persistence_record_fits_buffer(
+        "%s,%s,%.2f,%.2f\n",
+        kActivityRecord,
+        activity->activity_name ? activity->activity_name : "",
+        activity->score,
+        activity->total_score
+    );
+}
+
+static int persistence_parameter_text_supported(const Course_Parameter* parameter, const char* component_name)
+{
+    size_t activity_index;
+
+    if (!parameter || !component_name || !parameter->activities || !persistence_text_supported(parameter->parameter_name)) {
+        return 0;
+    }
+
+    if (!persistence_record_fits_buffer(
+            "%s,%s,%s,%.2f,%.2f\n",
+            kParameterRecord,
+            component_name,
+            parameter->parameter_name ? parameter->parameter_name : "",
+            parameter->weight,
+            parameter->percentage
+        )) {
+        return 0;
+    }
+
+    for (activity_index = 0; activity_index < vector_size(parameter->activities); activity_index++) {
+        Activities* activity = (Activities*)vector_at(parameter->activities, activity_index);
+
+        if (!persistence_activity_text_supported(activity)) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static int persistence_course_text_supported(const Course* course)
+{
+    size_t parameter_index;
+
+    if (!course
+        || !course->lecture.parameters
+        || !course->lab.parameters
+        || !persistence_text_supported(course->name)) {
+        return 0;
+    }
+
+    if (!persistence_record_fits_buffer(
+            "%s,%s,%.2f,%d\n",
+            kCourseRecord,
+            course->name ? course->name : "",
+            course->units,
+            course->lab_flag ? 1 : 0
+        )) {
+        return 0;
+    }
+
+    for (parameter_index = 0; parameter_index < vector_size(course->lecture.parameters); parameter_index++) {
+        Course_Parameter* parameter = (Course_Parameter*)vector_at(course->lecture.parameters, parameter_index);
+
+        if (!persistence_parameter_text_supported(parameter, kLectureComponent)) {
+            return 0;
+        }
+    }
+
+    for (parameter_index = 0; parameter_index < vector_size(course->lab.parameters); parameter_index++) {
+        Course_Parameter* parameter = (Course_Parameter*)vector_at(course->lab.parameters, parameter_index);
+
+        if (!persistence_parameter_text_supported(parameter, kLabComponent)) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 static int persistence_profile_text_supported(const Student_Profile* profile)
 {
     size_t course_index;
 
-    if (!profile) {
+    if (!profile || !profile->courses) {
         return 0;
     }
 
@@ -1133,46 +1317,25 @@ static int persistence_profile_text_supported(const Student_Profile* profile)
         return 0;
     }
 
+    if (!persistence_record_fits_buffer(
+            "%s,%s,%s,%s,%s,%s,%.2f,%.2f\n",
+            kProfileRecord,
+            profile->first_name ? profile->first_name : "",
+            profile->middle_name ? profile->middle_name : "",
+            profile->last_name ? profile->last_name : "",
+            profile->student_number ? profile->student_number : "",
+            profile->degree_program ? profile->degree_program : "",
+            profile->predicted_gwa,
+            profile->goal
+        )) {
+        return 0;
+    }
+
     for (course_index = 0; course_index < vector_size(profile->courses); course_index++) {
         Course* course = (Course*)vector_at(profile->courses, course_index);
-        size_t parameter_index;
 
-        if (!course || !persistence_text_supported(course->name)) {
+        if (!persistence_course_text_supported(course)) {
             return 0;
-        }
-
-        for (parameter_index = 0; parameter_index < vector_size(course->lecture.parameters); parameter_index++) {
-            Course_Parameter* parameter = (Course_Parameter*)vector_at(course->lecture.parameters, parameter_index);
-            size_t activity_index;
-
-            if (!parameter || !persistence_text_supported(parameter->parameter_name)) {
-                return 0;
-            }
-
-            for (activity_index = 0; activity_index < vector_size(parameter->activities); activity_index++) {
-                Activities* activity = (Activities*)vector_at(parameter->activities, activity_index);
-
-                if (!activity || !persistence_text_supported(activity->activity_name)) {
-                    return 0;
-                }
-            }
-        }
-
-        for (parameter_index = 0; parameter_index < vector_size(course->lab.parameters); parameter_index++) {
-            Course_Parameter* parameter = (Course_Parameter*)vector_at(course->lab.parameters, parameter_index);
-            size_t activity_index;
-
-            if (!parameter || !persistence_text_supported(parameter->parameter_name)) {
-                return 0;
-            }
-
-            for (activity_index = 0; activity_index < vector_size(parameter->activities); activity_index++) {
-                Activities* activity = (Activities*)vector_at(parameter->activities, activity_index);
-
-                if (!activity || !persistence_text_supported(activity->activity_name)) {
-                    return 0;
-                }
-            }
         }
     }
 
@@ -1313,6 +1476,7 @@ PersistenceStatus persistence_load_student_profile(const char* path, Student_Pro
     FILE* file;
     char first_line[PERSISTENCE_LINE_BUFFER_SIZE];
     PersistenceStatus status;
+    int has_line;
 
     if (!path || !profile) {
         return PERSISTENCE_STATUS_INVALID_ARGUMENT;
@@ -1330,7 +1494,15 @@ PersistenceStatus persistence_load_student_profile(const char* path, Student_Pro
         return PERSISTENCE_STATUS_IO_ERROR;
     }
 
-    if (!fgets(first_line, sizeof(first_line), file)) {
+    status = persistence_read_record(file, first_line, sizeof(first_line), &has_line);
+    if (status != PERSISTENCE_STATUS_OK) {
+        fclose(file);
+        student_profile_reset(profile);
+        memset(profile, 0, sizeof(*profile));
+        return status;
+    }
+
+    if (!has_line) {
         fclose(file);
         student_profile_reset(profile);
         memset(profile, 0, sizeof(*profile));

@@ -264,6 +264,47 @@ static char* duplicate_text(const char* value)
     return copy;
 }
 
+static char* repeat_character_text(char character, size_t count)
+{
+    char* text = (char*)malloc(count + 1);
+
+    if (!text) {
+        return NULL;
+    }
+
+    memset(text, character, count);
+    text[count] = '\0';
+    return text;
+}
+
+static int write_text_file(const char* path, const char* text)
+{
+    FILE* file = fopen(path, "w");
+
+    if (!file) {
+        return 0;
+    }
+
+    if (fputs(text, file) == EOF) {
+        fclose(file);
+        return 0;
+    }
+
+    return fclose(file) == 0;
+}
+
+static void expect_failed_load_cleared_profile(TestContext* context, const Student_Profile* profile)
+{
+    TEST_EXPECT(context, profile->first_name == NULL, "failed load should clear first name");
+    TEST_EXPECT(context, profile->middle_name == NULL, "failed load should clear middle name");
+    TEST_EXPECT(context, profile->last_name == NULL, "failed load should clear last name");
+    TEST_EXPECT(context, profile->student_number == NULL, "failed load should clear student number");
+    TEST_EXPECT(context, profile->degree_program == NULL, "failed load should clear degree program");
+    TEST_EXPECT(context, profile->courses == NULL, "failed load should clear courses");
+    TEST_EXPECT(context, profile->predicted_gwa == 0.0f, "failed load should clear predicted GWA");
+    TEST_EXPECT(context, profile->goal == 0.0f, "failed load should clear goal");
+}
+
 static float absolute_difference(float left, float right)
 {
     float difference = left - right;
@@ -732,6 +773,167 @@ static void test_profile_listing(TestContext* context)
     student_profile_reset(&second_profile);
 }
 
+static void test_blank_lines_are_ignored(TestContext* context)
+{
+    Student_Profile profile;
+    PersistenceStatus status;
+
+    TEST_EXPECT(
+        context,
+        write_text_file(
+            "grade-guard/unit-tests/persistence-blank-lines.csv",
+            "GRADE_GUARD_CSV,1\n"
+            "\n"
+            "PROFILE,Blank,,Lines,2026-20001,BSCS,1.75,1.20\n"
+            "\n"
+            "COURSE,CMSC 11,3.00,0\n"
+            "\n"
+            "PARAMETER,lecture,Quizzes,100.00,0.00\n"
+            "\n"
+            "ACTIVITY,Quiz 1,18.00,20.00\n"
+            "\n"
+        ),
+        "blank-line fixture should write"
+    );
+    if (context->failures != 0) {
+        return;
+    }
+
+    status = persistence_load_student_profile("grade-guard/unit-tests/persistence-blank-lines.csv", &profile);
+    TEST_EXPECT(context, status == PERSISTENCE_STATUS_OK, "blank lines should be ignored by the v1 loader");
+    if (status != PERSISTENCE_STATUS_OK) {
+        return;
+    }
+
+    expect_string_equal(context, "Blank", profile.first_name, "blank-line fixture should load first name");
+    TEST_EXPECT_SIZE_EQ(context, 1, vector_size(profile.courses), "blank-line fixture should load one course");
+    student_profile_reset(&profile);
+}
+
+static void test_missing_fields_are_rejected(TestContext* context)
+{
+    Student_Profile profile = {0};
+    PersistenceStatus status;
+
+    TEST_EXPECT(
+        context,
+        write_text_file(
+            "grade-guard/unit-tests/persistence-missing-field.csv",
+            "GRADE_GUARD_CSV,1\n"
+            "PROFILE,Alice,,Student,2026-20002,BSCS,1.75\n"
+        ),
+        "missing-field fixture should write"
+    );
+    if (context->failures != 0) {
+        return;
+    }
+
+    status = persistence_load_student_profile("grade-guard/unit-tests/persistence-missing-field.csv", &profile);
+    TEST_EXPECT(context, status == PERSISTENCE_STATUS_PARSE_ERROR, "missing profile fields should be rejected");
+    if (status != PERSISTENCE_STATUS_OK) {
+        expect_failed_load_cleared_profile(context, &profile);
+    }
+}
+
+static void test_invalid_numbers_are_rejected_without_partial_state(TestContext* context)
+{
+    Student_Profile profile = {0};
+    PersistenceStatus status;
+
+    TEST_EXPECT(
+        context,
+        write_text_file(
+            "grade-guard/unit-tests/persistence-invalid-number.csv",
+            "GRADE_GUARD_CSV,1\n"
+            "PROFILE,Alice,,Student,2026-20003,BSCS,1.75,1.20\n"
+            "COURSE,CMSC 11,3.00,0\n"
+            "PARAMETER,lecture,Quizzes,100.00,0.00\n"
+            "ACTIVITY,Quiz 1,not-a-number,20.00\n"
+        ),
+        "invalid-number fixture should write"
+    );
+    if (context->failures != 0) {
+        return;
+    }
+
+    status = persistence_load_student_profile("grade-guard/unit-tests/persistence-invalid-number.csv", &profile);
+    TEST_EXPECT(context, status == PERSISTENCE_STATUS_PARSE_ERROR, "invalid numeric fields should be rejected");
+    if (status != PERSISTENCE_STATUS_OK) {
+        expect_failed_load_cleared_profile(context, &profile);
+    }
+}
+
+static void test_oversized_record_is_rejected(TestContext* context)
+{
+    Student_Profile profile = {0};
+    PersistenceStatus status;
+    char* long_name;
+    FILE* file;
+
+    long_name = repeat_character_text('A', 1100);
+    TEST_EXPECT(context, long_name != NULL, "oversized fixture should allocate long text");
+    if (!long_name) {
+        return;
+    }
+
+    file = fopen("grade-guard/unit-tests/persistence-oversized-record.csv", "w");
+    TEST_EXPECT(context, file != NULL, "oversized fixture file should open");
+    if (!file) {
+        free(long_name);
+        return;
+    }
+
+    fprintf(file, "GRADE_GUARD_CSV,1\n");
+    fprintf(file, "PROFILE,Alice,,Student,2026-20004,BSCS,1.75,1.20\n");
+    fprintf(file, "COURSE,CMSC 11,3.00,0\n");
+    fprintf(file, "PARAMETER,lecture,%s,100.00,0.00\n", long_name);
+    fclose(file);
+
+    status = persistence_load_student_profile("grade-guard/unit-tests/persistence-oversized-record.csv", &profile);
+    TEST_EXPECT(context, status == PERSISTENCE_STATUS_PARSE_ERROR, "oversized records should be rejected during load");
+    if (status != PERSISTENCE_STATUS_OK) {
+        expect_failed_load_cleared_profile(context, &profile);
+    }
+
+    free(long_name);
+}
+
+static void test_oversized_text_is_rejected_on_save(TestContext* context)
+{
+    Student_Profile profile;
+    PersistenceStatus status;
+    char* long_name;
+    Course* course;
+
+    TEST_EXPECT(context, build_shape_lecture_only(&profile), "oversized-save profile should build");
+    if (context->failures != 0) {
+        return;
+    }
+
+    long_name = repeat_character_text('B', 1100);
+    TEST_EXPECT(context, long_name != NULL, "oversized-save profile should allocate long text");
+    if (!long_name) {
+        student_profile_reset(&profile);
+        return;
+    }
+
+    course = (Course*)vector_at(profile.courses, 0);
+    TEST_EXPECT(context, course != NULL, "oversized-save profile should expose the first course");
+    if (!course) {
+        free(long_name);
+        student_profile_reset(&profile);
+        return;
+    }
+
+    free(course->name);
+    course->name = long_name;
+
+    status = persistence_save_student_profile(&profile, "grade-guard/unit-tests/persistence-oversized-save.csv");
+    TEST_EXPECT(context, status == PERSISTENCE_STATUS_UNSUPPORTED_TEXT, "oversized text should be rejected before serialization");
+
+    student_profile_reset(&profile);
+}
+
 int main(void)
 {
     TestContext context = {0};
@@ -741,6 +943,11 @@ int main(void)
     run_round_trip_case(&context, "grade-guard/unit-tests/persistence-shape-mixed.csv", 1, build_shape_mixed);
     test_legacy_load(&context);
     test_profile_listing(&context);
+    test_blank_lines_are_ignored(&context);
+    test_missing_fields_are_rejected(&context);
+    test_invalid_numbers_are_rejected_without_partial_state(&context);
+    test_oversized_record_is_rejected(&context);
+    test_oversized_text_is_rejected_on_save(&context);
 
     if (context.failures != 0) {
         fprintf(stderr, "persistence contract tests failed: %d\n", context.failures);

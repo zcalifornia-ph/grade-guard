@@ -249,18 +249,58 @@ static void app_initialize_console(void)
     ui_set_font_size();
 }
 
-static int app_load_profiles(Vector* student_profiles)
+static const char* app_load_error_message(PersistenceStatus status)
+{
+    switch (status) {
+        case PERSISTENCE_STATUS_OK:
+            return "Saved profiles loaded successfully.";
+        case PERSISTENCE_STATUS_INVALID_ARGUMENT:
+            return "Saved profile data is invalid.";
+        case PERSISTENCE_STATUS_IO_ERROR:
+            return "Unable to access one of the saved profile files.";
+        case PERSISTENCE_STATUS_MEMORY_ERROR:
+            return "Not enough memory to load saved profiles.";
+        case PERSISTENCE_STATUS_PARSE_ERROR:
+            return "A saved profile file is malformed, truncated, or oversized.";
+        case PERSISTENCE_STATUS_UNSUPPORTED_TEXT:
+            return "A saved profile uses unsupported text content.";
+        default:
+            return "Unable to load saved profiles.";
+    }
+}
+
+static const char* app_save_error_message(PersistenceStatus status)
+{
+    switch (status) {
+        case PERSISTENCE_STATUS_OK:
+            return "Profiles saved successfully.";
+        case PERSISTENCE_STATUS_INVALID_ARGUMENT:
+            return "A profile contains invalid data and could not be saved.";
+        case PERSISTENCE_STATUS_IO_ERROR:
+            return "Unable to write one of the profile files.";
+        case PERSISTENCE_STATUS_MEMORY_ERROR:
+            return "Not enough memory to save all profiles.";
+        case PERSISTENCE_STATUS_PARSE_ERROR:
+            return "A profile could not be serialized safely.";
+        case PERSISTENCE_STATUS_UNSUPPORTED_TEXT:
+            return "Profiles cannot be saved with commas, newlines, or oversized text fields.";
+        default:
+            return "Unable to save all profiles.";
+    }
+}
+
+static PersistenceStatus app_load_profiles(Vector* student_profiles)
 {
     Vector* profile_paths;
     size_t i;
 
     if (!student_profiles) {
-        return 0;
+        return PERSISTENCE_STATUS_INVALID_ARGUMENT;
     }
 
     profile_paths = persistence_list_profile_file_paths(".");
     if (!profile_paths) {
-        return 0;
+        return PERSISTENCE_STATUS_MEMORY_ERROR;
     }
 
     for (i = 0; i < vector_size(profile_paths); i++) {
@@ -271,32 +311,32 @@ static int app_load_profiles(Vector* student_profiles)
         path = (char**)vector_at(profile_paths, i);
         if (!path || !*path) {
             persistence_destroy_profile_file_paths(profile_paths);
-            return 0;
+            return PERSISTENCE_STATUS_INVALID_ARGUMENT;
         }
 
         status = persistence_load_student_profile(*path, &profile);
         if (status != PERSISTENCE_STATUS_OK) {
             persistence_destroy_profile_file_paths(profile_paths);
-            return 0;
+            return status;
         }
 
         if (!app_push_profile(student_profiles, &profile)) {
             student_profile_reset(&profile);
             persistence_destroy_profile_file_paths(profile_paths);
-            return 0;
+            return PERSISTENCE_STATUS_MEMORY_ERROR;
         }
     }
 
     persistence_destroy_profile_file_paths(profile_paths);
-    return 1;
+    return PERSISTENCE_STATUS_OK;
 }
 
-static int app_save_profiles(Vector* student_profiles)
+static PersistenceStatus app_save_profiles(Vector* student_profiles)
 {
     size_t i;
 
     if (!student_profiles) {
-        return 0;
+        return PERSISTENCE_STATUS_INVALID_ARGUMENT;
     }
 
     for (i = 0; i < vector_size(student_profiles); i++) {
@@ -305,18 +345,18 @@ static int app_save_profiles(Vector* student_profiles)
 
         path = persistence_build_profile_path(".", i);
         if (!path) {
-            return 0;
+            return PERSISTENCE_STATUS_MEMORY_ERROR;
         }
 
         status = persistence_save_student_profile((Student_Profile*)vector_at(student_profiles, i), path);
         free(path);
 
         if (status != PERSISTENCE_STATUS_OK) {
-            return 0;
+            return status;
         }
     }
 
-    return 1;
+    return PERSISTENCE_STATUS_OK;
 }
 
 static void app_destroy_profiles(Vector* student_profiles)
@@ -338,6 +378,7 @@ int app_run(void)
 {
     int selected;
     Vector* student_profiles;
+    PersistenceStatus status;
 
     student_profiles = vector_create(sizeof(Student_Profile));
     if (!student_profiles) {
@@ -346,8 +387,9 @@ int app_run(void)
 
     app_initialize_console();
 
-    if (!app_load_profiles(student_profiles)) {
-        ui_show_failure("Unable to load saved profiles.");
+    status = app_load_profiles(student_profiles);
+    if (status != PERSISTENCE_STATUS_OK) {
+        ui_show_failure(app_load_error_message(status));
         app_destroy_profiles(student_profiles);
         return 1;
     }
@@ -392,8 +434,9 @@ int app_run(void)
             }
 
             case 2:
-                if (!app_save_profiles(student_profiles)) {
-                    ui_show_failure("Unable to save all profiles.");
+                status = app_save_profiles(student_profiles);
+                if (status != PERSISTENCE_STATUS_OK) {
+                    ui_show_failure(app_save_error_message(status));
                     break;
                 }
 
