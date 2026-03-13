@@ -1,6 +1,26 @@
 # Changelog
 
-Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, workflow-controller, and versioned persistence-contract modules.
+Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, workflow-controller, versioned persistence-contract modules, and repository-wide source attribution coverage.
+
+## v0.1.9 - 2026-03-13
+
+### Added or Changed
+- Updated `README.md` from `v0.1.8` to `v0.1.9`, refreshed the top-level repository status text, redirected the release trail to the new attribution notes, and documented the repository-wide source attribution baseline in the implementation snapshot.
+- Added and normalized the required UP Mindanao / BSCS / `CMSC 18 - COMPUTER PROGRAMING I` attribution block, file description section, and in-comment Apache 2.0 license text across every tracked `.h` and `.c` file under `grade-guard/`.
+- Added `docs/version-0-1-9-docs.md` with the fuller explanation of the attribution/header normalization scope, file-level provenance goals, validation checks, and manual cleanup guidance for generated artifacts.
+- Kept `REQUIREMENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`, and `CODE_OF_CONDUCT.md` unchanged because this version does not alter runtime scope, contributor workflow, security-reporting policy, or community-governance rules.
+
+### For Deletion
+- `grade-guard/build-smoke/` (smoke-build output directory still present in the workspace).
+- `grade-guard/bolt-4-1-main.exe` (local acceptance-build artifact from the prior Bolt 4.1 validation run).
+- `grade-guard/tests/vector_test.exe` (local vector regression-test binary present in the workspace).
+- `grade-guard/unit-tests/models_lifecycle_test.exe` (local lifecycle regression-test binary present in the workspace).
+- `grade-guard/unit-tests/persistence_contract_test.exe` (local persistence-contract regression binary present in the workspace).
+- `grade-guard/unit-tests/persistence-legacy-fixture.csv` (generated legacy compatibility fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-shape-lecture.csv` (generated round-trip output from the persistence regression).
+- `grade-guard/unit-tests/persistence-shape-lab.csv` (generated round-trip output from the persistence regression).
+- `grade-guard/unit-tests/persistence-shape-mixed.csv` (generated round-trip output from the persistence regression).
+- `grade-guard/unit-tests/persistence-runtime/` (generated numbered runtime-output directory from the persistence regression).
 
 ## v0.1.8 - 2026-03-13
 

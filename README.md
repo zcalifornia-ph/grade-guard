@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.1.8
+    Version: v0.1.9
     <br />
-    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, workflow-controller, and versioned persistence-contract modules; Unit 4 schema approval and Bolt 4.2 hardening are still pending
+    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, workflow-controller, versioned persistence-contract modules, and repository-wide source attribution coverage; Unit 4 schema approval and Bolt 4.2 hardening are still pending
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-8-docs.md"><strong>Version 0.1.8 notes</strong></a>
+    <a href="docs/version-0-1-9-docs.md"><strong>Version 0.1.9 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -71,7 +71,8 @@ Unit 2 now includes the first real extracted utility and domain modules: the sha
 Unit 3 now includes both the shared UI/platform layer and the extracted controller path: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c` own the reusable Windows console primitives, `grade-guard/source/app.c` owns startup and top-level menu orchestration, and `grade-guard/source/profile_controller.c` now owns the interactive profile/course/activity workflows.
 Unit 4 now includes the first hardened persistence boundary: `grade-guard/header/persistence.h` and `grade-guard/source/persistence.c` now expose a status-based save/load/list API, write the versioned `GRADE_GUARD_CSV,1` schema for new saves, and still load historical unversioned profile files through a documented compatibility path.
 Focused regression coverage now exists for the shared vector layer, the domain lifecycle layer, and the persistence contract through `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, and `grade-guard/unit-tests/persistence_contract_test.c`.
-Detailed version notes for this persistence-contract update are available in `docs/version-0-1-8-docs.md`, and the Bolt-specific boundary/evidence note lives in `docs/unit-4-bolt-4-1-persistence-contract.md`.
+This repository state also normalizes a shared attribution-and-license header across every tracked `.c` and `.h` file under `grade-guard/`, so course provenance, authorship, and licensing remain visible even when an individual file is viewed on its own.
+Detailed version notes for this attribution update are available in `docs/version-0-1-9-docs.md`, and the latest Bolt-specific boundary/evidence note remains `docs/unit-4-bolt-4-1-persistence-contract.md` because this release does not change the runtime persistence contract.
 
 ### What Grade Guard Does
 
@@ -119,6 +120,7 @@ Detailed version notes for this persistence-contract update are available in `do
 - Shared UI/platform module: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c`
 - Focused regression harnesses: `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, and `grade-guard/unit-tests/persistence_contract_test.c`
 - Unit-test support: `grade-guard/unit-tests/test_framework.h`
+- Source attribution baseline: standardized university/course/license header block across every tracked `.c` and `.h` file under `grade-guard/`
 - UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, and shared screen/cursor/field/selection helpers behind `ui_console`
 - Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
 - Academic model: lecture components plus optional laboratory components, each with weighted parameters and activity scores
