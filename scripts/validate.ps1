@@ -1,5 +1,5 @@
 param(
-    [string]$OutputDir = "artifacts/unit-6-bolt-6-1"
+    [string]$OutputDir = "artifacts/validation"
 )
 
 $ErrorActionPreference = "Stop"

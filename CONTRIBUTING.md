@@ -1,7 +1,7 @@
 # Contributing
 
 Thanks for contributing to Grade Guard.
-This repository currently centers on a Windows console C application with a thin `grade-guard/main.c` entry point plus extracted modules under `grade-guard/header/` and `grade-guard/source/`, and the root documentation that explains how the project is used and maintained.
+This repository centers on a Windows console C application plus the documentation and scripts that support building, validating, and maintaining it.
 
 ## Before You Start
 
@@ -12,42 +12,38 @@ This repository currently centers on a Windows console C application with a thin
 
 ## Development Setup
 
-Validated baseline setup:
+Baseline setup:
 
 ```powershell
 git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
 powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
-.\artifacts\unit-6-bolt-6-1\grade-guard.exe
+.\artifacts\build\grade-guard.exe
 ```
 
-This baseline assumes PowerShell plus a GCC-compatible Windows C toolchain on `PATH`.
-Use the manual compile commands in `README.md` only if you are deliberately debugging the raw compile line instead of the validated script path.
+This baseline assumes PowerShell and a GCC-compatible Windows C toolchain on `PATH`.
+Use the build script as the default path unless you are deliberately debugging a custom compile line.
 
 ## Contribution Standards
 
 - Preserve or improve clarity in the grade-tracking workflow.
-- Keep C code readable and close to the existing project style unless a larger refactor is justified.
+- Keep C code readable and close to the existing style unless a larger refactor is justified.
 - Document user-visible changes in `README.md` and `CHANGELOG.md` when relevant.
 - Include manual verification steps plus any targeted automated checks relevant to your change.
-- Avoid committing generated CSV profile files or ignored agent-workflow files.
-- Do not introduce platform-specific behavior beyond Windows unless the goal of the change is explicit portability work.
+- Avoid committing generated build outputs or local profile data.
+- Do not introduce non-Windows-specific runtime behavior unless the change is explicitly about portability work.
 
 ## Recommended Verification
 
 Before opening a pull request, verify the relevant flows:
 
-1. Run `powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1` to confirm the validated application build still works.
-2. Run `powershell -ExecutionPolicy Bypass -File .\scripts\validate.ps1` if your change touches shared runtime modules, release/readme documentation, validation scripts, or more than one regression area.
-3. Run the focused vector regression test if your change touches the shared vector module and you are not already using the full validation script.
+1. Run `powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1` to confirm the application still builds.
+2. Run `powershell -ExecutionPolicy Bypass -File .\scripts\validate.ps1` if your change touches shared runtime modules, scripts, documentation, or multiple regression areas.
+3. Run the focused vector regression test if your change only touches the shared vector module and you are not already using the full validation script.
 4. Run the lifecycle regression test if your change touches `models`, nested ownership, or create/delete flows and you are not already using the full validation script.
 5. Run the persistence contract regression test if your change touches `persistence`, CSV schema rules, numbered-profile discovery, or startup/shutdown save/load behavior and you are not already using the full validation script.
 6. Run a live Windows console verification pass if your change touches `ui_console`, `app`, `profile_controller`, menu navigation, field editing, screen redraw logic, or other keyboard-driven UI behavior.
-7. Create a new profile.
-8. Add at least one course and define its parameters.
-9. Record at least one activity score.
-10. View the resulting grade breakdown.
-11. Exit and confirm the profile data persists to numbered CSV files in the working directory.
+7. Create a new profile, add at least one course, record at least one score, view the grade breakdown, then exit and confirm that local persistence still works.
 
 ## Pull Requests
 

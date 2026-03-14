@@ -13,15 +13,15 @@
   <h3 align="center">Grade Guard</h3>
 
   <p align="center">
-    <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
+    <strong>Grade Guard is a Windows console application for planning, tracking, and reviewing semester grades from local student profiles.</strong>
     <br />
-    Version: v0.1.13
+    Version: v1.0.0
     <br />
-    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, grade-engine, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, repository-wide source attribution coverage, validated Unit 5 defect fixes, and a validated Unit 6.1 GCC build/validation workflow; remaining Unit 6.2 release-artifact work and live Windows console-host review are still pending
+    Status: 1.0.0 release baseline for the Windows console application, with automated validation for core data, persistence, grade calculation, and app orchestration flows.
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-13-docs.md"><strong>Version 0.1.13 notes</strong></a>
+    <a href="docs/version-1-0-0-docs.md"><strong>Version 1.0.0 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -38,11 +38,10 @@
       <ul>
         <li><a href="#what-grade-guard-does">What Grade Guard Does</a></li>
         <li><a href="#current-limitations">Current Limitations</a></li>
-        <li><a href="#current-planning-baseline">Current Planning Baseline</a></li>
-        <li><a href="#current-implementation-snapshot">Current Implementation Snapshot</a></li>
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
+    <li><a href="#project-layout">Project Layout</a></li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
@@ -51,6 +50,7 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
+    <li><a href="#validation">Validation</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -62,90 +62,75 @@
 ## About The Project
 
 Grade Guard began as a CMSC 18 final project at the University of the Philippines Mindanao.
-It is designed to help students monitor their academic progress on a per-semester basis by modeling courses, assessment categories, activity scores, and goal grades inside a text-based interface.
+It helps students keep a local academic record for one semester at a time, with support for course setup, weighted assessment categories, recorded scores, and projected academic standing.
 
-The current implementation now ships in-repository under a thin `grade-guard/main.c` entry point backed by `grade-guard/source/app.c` and `grade-guard/source/profile_controller.c`, and it uses a weighted-average approach to estimate student standing from the scores and course weights entered by the user.
-The repository also now includes a root `REQUIREMENTS.md` that defines the next engineering phase: splitting the monolithic source into `header/` and `source/` modules while fixing verified defects.
-That planning baseline is now accompanied by `docs/unit-1-bolt-1-1-monolith-inventory.md`, which maps the current monolith responsibilities and proposed destination modules before extraction starts, and `docs/unit-1-bolt-1-2-module-scaffold.md`, which records the initial public interface scaffold for that refactor.
-Unit 2 now includes the first real extracted utility and domain modules: the shared vector implementation in `grade-guard/source/vector.c`, the domain/lifecycle implementation in `grade-guard/source/models.c`, and their public APIs in `grade-guard/header/vector.h` plus `grade-guard/header/models.h`.
-Unit 3 now includes both the shared UI/platform layer and the extracted controller path: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c` own the reusable Windows console primitives, `grade-guard/source/app.c` owns startup and top-level menu orchestration, and `grade-guard/source/profile_controller.c` now owns the interactive profile/course/activity workflows.
-Unit 4 now includes both the versioned persistence boundary and the next hardening pass: `grade-guard/header/persistence.h` and `grade-guard/source/persistence.c` now expose a status-based save/load/list API, write the versioned `GRADE_GUARD_CSV,1` schema for new saves, still load historical unversioned profile files through a documented compatibility path, reject oversized logical records safely, and refuse save-side rows that exceed the supported parser contract.
-Unit 5 now closes the first defect-remediation cycle: `docs/unit-5-bolt-5-1-defect-baseline.md` records the baseline defect inventory, `docs/unit-5-bolt-5-2-defect-fixes.md` records the final outcomes and validation evidence, and `grade-guard/unit-tests/unit5_defect_baseline_test.c` now runs as a focused regression harness for the fixed grade-engine and selection-flow behaviors.
-Unit 6.1 now formalizes the validated repository workflow: `scripts/build.ps1` and `scripts/validate.ps1` define the baseline GCC build/acceptance run, and `docs/unit-6-bolt-6-1-build-validation.md` records the toolchain, warning flags, smoke coverage, and evidence.
-Focused regression coverage now exists for the shared vector layer, the domain lifecycle layer, the persistence contract, the Unit 5 defect-fix set, and the app-level orchestration seam through `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, `grade-guard/unit-tests/persistence_contract_test.c`, `grade-guard/unit-tests/unit5_defect_baseline_test.c`, and `grade-guard/unit-tests/app_smoke_test.c`.
-This repository state also normalizes a shared attribution-and-license header across every tracked `.c` and `.h` file under `grade-guard/`, so course provenance, authorship, and licensing remain visible even when an individual file is viewed on its own.
-Detailed version notes for the current tagged release are now in `docs/version-0-1-13-docs.md`, and the latest build/validation trail remains `docs/unit-6-bolt-6-1-build-validation.md`.
+The current codebase ships as a Windows-first C application with a thin `grade-guard/main.c` entry point and focused runtime modules for application flow, profile management, persistence, console UI helpers, grade calculation, shared data models, and dynamic vectors.
 
 ### What Grade Guard Does
 
-- Creates student profiles with basic academic identity data.
-- Tracks multiple courses, including units and optional laboratory components.
-- Lets users define course parameters such as quizzes, exams, and assignments with custom weights.
-- Records activity scores under each parameter and displays grade details in the console interface.
-- Stores profile data in numbered CSV files such as `0.csv`, `1.csv`, and so on in the working directory.
-- Supports grade-goal selection, including custom targets.
-- Calculates a predicted GWA and the percentage progress toward the selected grade goal.
+- Creates local student profiles with academic identity details and a target grade goal.
+- Tracks courses with lecture-only or lecture-plus-laboratory setups.
+- Lets users define weighted assessment categories such as quizzes, exams, projects, and assignments.
+- Records activity scores and shows the resulting breakdown in a keyboard-driven console interface.
+- Calculates predicted GWA and progress toward the selected goal.
+- Saves new profiles with the versioned `GRADE_GUARD_CSV,1` format and can still load older unversioned profile files.
 
 ### Current Limitations
 
-- Windows-only for now because the program depends on `windows.h` and `conio.h`.
-- The main entry point is now thin, and a headless app smoke harness now covers startup/create/select/save/load/delete/exit orchestration, but the extracted interactive workflow path still depends on live console behavior and does not have raw-key controller automation under a real console host.
-- Uses local CSV persistence with a versioned save format, legacy load compatibility, and malformed/oversized record hardening, but live review of the end-user persistence failure flow, release automation, and broad end-to-end coverage are still incomplete.
-- The Unit 5 fixes and Unit 6.1 orchestration flow are validated in targeted regression tests, but the affected Windows console host behaviors still need a manual acceptance walkthrough to confirm redraw, fullscreen, and raw-key handling under a real host.
-- Numeric entry still accepts malformed or out-of-range text at the controller layer; the grade engine now bounds over-total scores and distinguishes no-data profiles, but input rejection is still not enforced at entry time.
-- Windows console redraw, clear-screen, fullscreen, and raw-key behavior still depend on the active host, so Unit 3 and Unit 5 workflow changes still require a live manual acceptance run in addition to compile/test checks.
-- Local binaries, generated CSV fixtures, and editor scratch files still require manual cleanup before committing.
-
-### Current Planning Baseline
-
-- Refactor target: split `grade-guard/main.c` into focused modules under `grade-guard/header/` and `grade-guard/source/`.
-- Entry-point target: keep `grade-guard/main.c` small and orchestration-only.
-- Defect focus: controller-side numeric validation, remaining live Windows workflow review, CSV parsing robustness, and Unit 6 release readiness.
-- Planning artifact: `REQUIREMENTS.md`
-- Architecture inventory: `docs/unit-1-bolt-1-1-monolith-inventory.md`
-- Scaffold inventory: `docs/unit-1-bolt-1-2-module-scaffold.md`
-- Vector extraction note: `docs/unit-2-bolt-2-1-vector.md`
-- Domain lifecycle extraction note: `docs/unit-2-bolt-2-2-models.md`
-- UI/platform extraction note: `docs/unit-3-bolt-3-1-ui-console.md`
-- Workflow-controller extraction note: `docs/unit-3-bolt-3-2-workflow-controllers.md`
-- Persistence-contract note: `docs/unit-4-bolt-4-1-persistence-contract.md`
-- Persistence-hardening note: `docs/unit-4-bolt-4-2-persistence-hardening.md`
-- Unit 5 defect-baseline note: `docs/unit-5-bolt-5-1-defect-baseline.md`
-- Unit 5 defect-fix note: `docs/unit-5-bolt-5-2-defect-fixes.md`
-- Unit 6 build/validation note: `docs/unit-6-bolt-6-1-build-validation.md`
-- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, Bolt 2.2 domain lifecycle extraction, Bolt 3.2 controller extraction, Bolt 4.1 persistence-contract hardening, Bolt 4.2 parsing/serialization hardening, Bolt 5.2 defect remediation, and Bolt 6.1 build/validation formalization are recorded with evidence; the remaining open work centers on older review gates, live Windows host validation, controller-side numeric rejection, and Unit 6.2 release artifacts.
-
-### Current Implementation Snapshot
-
-- Entry point: thin `grade-guard/main.c` delegating to `grade-guard/source/app.c`
-- Planned extraction scaffold: `grade-guard/header/` and `grade-guard/source/`
-- App orchestrator module: `grade-guard/header/app.h` and `grade-guard/source/app.c`
-- Workflow controller module: `grade-guard/header/profile_controller.h` and `grade-guard/source/profile_controller.c`
-- Shared utility module: `grade-guard/header/vector.h` and `grade-guard/source/vector.c`
-- Shared domain module: `grade-guard/header/models.h` and `grade-guard/source/models.c`
-- Grade engine module: `grade-guard/header/grade_calc.h` and `grade-guard/source/grade_calc.c`
-- Grade-engine hardening behaviors: zero scores count toward denominators, lab components use normalized 50/50 weighting, over-total scores are bounded during aggregation, and predicted GWA can report a no-data state through `calculate_predicted_gwa()`
-- Persistence module: `grade-guard/header/persistence.h` and `grade-guard/source/persistence.c`
-- Persistence hardening behaviors: overflow-aware record reads, save-side row-length validation, and status-specific load/save failure messages in `app.c`
-- Shared UI/platform module: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c`
-- Selection-cancel contract: `ui_selection_handler()` now exposes `UI_SELECTION_STATUS_CANCEL`, and the touched controller menus/selectors honor `Esc` as a real back-out path
-- Focused regression harnesses: `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, `grade-guard/unit-tests/persistence_contract_test.c`, and `grade-guard/unit-tests/unit5_defect_baseline_test.c`
-- App orchestration smoke harness: `grade-guard/unit-tests/app_smoke_test.c`
-- Unit-test support: `grade-guard/unit-tests/test_framework.h`
-- Unit 5 defect notes: `docs/unit-5-bolt-5-1-defect-baseline.md` and `docs/unit-5-bolt-5-2-defect-fixes.md`
-- Unit 6 build/validation note: `docs/unit-6-bolt-6-1-build-validation.md`
-- Source attribution baseline: standardized university/course/license header block across every tracked `.c` and `.h` file under `grade-guard/`
-- UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, `Esc`, and shared screen/cursor/field/selection helpers behind `ui_console`
-- Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
-- Academic model: lecture components plus optional laboratory components, each with weighted parameters and activity scores
-- Persistence model: numbered working-directory CSV files using the versioned `GRADE_GUARD_CSV,1` schema for new saves, with legacy load compatibility for historical files
-- Resolved Unit 5 defect classes: zero-score inclusion, normalized lab-course weighting, bounded over-total scores, no-data predicted-GWA rendering, and shared `Esc` cancel propagation
+- Windows-only for now because the runtime depends on `windows.h` and `conio.h`.
+- Console redraw, fullscreen, and raw-key behavior still depend on the active Windows console host and benefit from live manual verification.
+- Numeric entry is bounded safely inside the grade engine, but malformed text is not yet rejected at every controller input point.
+- Persistence remains local-file based; there is no sync, export service, or multi-user storage layer.
 
 ### Built With
 
 - [C](https://en.wikipedia.org/wiki/C_(programming_language))
 - [Windows Console API](https://learn.microsoft.com/windows/console/)
-- Standard C library facilities for file I/O, memory management, and string handling
+- [PowerShell](https://learn.microsoft.com/powershell/)
+- GCC-compatible Windows toolchains such as MinGW-w64 or TDM-GCC
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Project Layout
+
+```text
+grade-guard/
+  grade-guard/
+    main.c
+    header/
+      app.h
+      grade_calc.h
+      models.h
+      persistence.h
+      profile_controller.h
+      ui_console.h
+      vector.h
+    source/
+      app.c
+      grade_calc.c
+      models.c
+      persistence.c
+      profile_controller.c
+      ui_console.c
+      vector.c
+    tests/
+      vector_test.c
+    unit-tests/
+      app_smoke_test.c
+      models_lifecycle_test.c
+      persistence_contract_test.c
+      test_framework.h
+      unit5_defect_baseline_test.c
+  docs/
+    version-1-0-0-docs.md
+    ...
+  scripts/
+    build.ps1
+    validate.ps1
+```
+
+The `docs/` directory keeps detailed release notes and implementation notes.
+The root documentation focuses on how to build, validate, and use the application.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -154,9 +139,9 @@ Detailed version notes for the current tagged release are now in `docs/version-0
 ### Prerequisites
 
 - Windows 10 or Windows 11
-- A GCC-compatible Windows C toolchain on `PATH` that can build code using `windows.h` and `conio.h`
+- PowerShell
+- A GCC-compatible Windows C toolchain on `PATH`
 - Git, if you want to clone the repository directly
-- PowerShell for the validated build/validation scripts
 
 ### Build and Run
 
@@ -167,14 +152,7 @@ git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
 ```
 
-Validated baseline toolchain and warning flags:
-
-```sh
-gcc.exe (tdm64-1) 10.3.0
-flags: -std=c17 -Wall -Wextra -pedantic
-```
-
-Build the application with the validated script:
+Build the application with the default release-facing script:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
@@ -183,10 +161,38 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 Run the application:
 
 ```powershell
-.\artifacts\unit-6-bolt-6-1\grade-guard.exe
+.\artifacts\build\grade-guard.exe
 ```
 
-When you exit through the main menu, the program writes profile data back to numbered CSV files in the current working directory using the versioned `GRADE_GUARD_CSV,1` contract.
+If you want a different output path, pass `-OutputPath` explicitly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -OutputPath .\artifacts\custom\grade-guard.exe
+```
+
+When you exit from the main menu, the program saves profile data back to numbered CSV files in the working directory.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Usage
+
+Navigation is keyboard-driven through the Windows console UI and relies on arrow keys, `Enter`, and `Esc` on supported selection screens.
+
+Typical flow inside the application:
+
+1. Select `New Profile` and enter your student details.
+2. Add one or more courses and decide whether each course has a laboratory component.
+3. Define weighted assessment categories such as quizzes, exams, or assignments.
+4. Add activities and record achieved scores for each category.
+5. Select a target grade goal from the presets or enter a custom goal.
+6. Open `View Grades` to inspect the current breakdown and predicted GWA.
+7. Exit the program to persist the profile locally.
+
+You can reopen an existing profile later by student number through the `Select Profile` flow in the main menu.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Validation
 
 Run the full validation workflow:
 
@@ -194,7 +200,7 @@ Run the full validation workflow:
 powershell -ExecutionPolicy Bypass -File .\scripts\validate.ps1
 ```
 
-That acceptance run rebuilds the application and executes:
+That workflow rebuilds the application into `artifacts/validation/` and executes:
 
 - `grade-guard/tests/vector_test.c`
 - `grade-guard/unit-tests/models_lifecycle_test.c`
@@ -202,41 +208,16 @@ That acceptance run rebuilds the application and executes:
 - `grade-guard/unit-tests/unit5_defect_baseline_test.c`
 - `grade-guard/unit-tests/app_smoke_test.c`
 
-The new app smoke harness exercises startup, profile creation, profile selection, save/load, grading persistence, deletion persistence, and exit against the real `app.c` orchestration boundary with stubbed UI/controller hooks. See `docs/unit-6-bolt-6-1-build-validation.md` for the full validation matrix and residual live-console caveats.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Usage
-
-Typical flow inside the application:
-
-Navigation is keyboard-driven through the Windows console UI and relies on arrow keys, `Enter`, and on selection screens `Esc` for cancel/back-out behavior.
-
-1. Select `New Profile` and enter your student details.
-2. Add one or more courses, including units and whether a course has a laboratory component.
-3. Define weighted course parameters such as quizzes, exams, projects, or assignments.
-4. Add activities and record achieved scores for each parameter.
-5. Set a target grade goal from the preset options or enter a custom goal.
-6. Use `View Grades` to inspect the current breakdown.
-7. Exit the program to persist loaded profiles back to numbered CSV files in the working directory.
-
-You can also reopen an existing profile by student number through the `Select Profile` flow in the main menu.
+The validation path covers vector behavior, nested model lifecycle rules, CSV persistence, grade-engine edge cases, and application startup/save/load/delete orchestration through a smoke harness.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Roadmap
 
-- [ ] Finalize Unit 1 / Bolt 1.1 review and confirm the proposed module boundaries.
-- [ ] Review the new `grade-guard/header/` and `grade-guard/source/` scaffold and confirm the public interfaces are stable enough for extraction.
-- [ ] Review and approve Unit 2 data ownership and lifecycle rules now that Bolt 2.2 is implemented.
-- [ ] Review and approve the Unit 4 CSV schema, numbered-file contract, and legacy compatibility approach.
-- [ ] Review the Unit 4 / Bolt 4.2 malformed/truncated CSV hardening and confirm the user-visible persistence failure flow in a live console pass.
-- [ ] Perform a live Windows console walkthrough of the fixed Unit 5 cancel/no-data flows and confirm the user-facing behavior under a real host.
-- [ ] Improve controller-side numeric validation so malformed values are rejected before they reach the grade engine instead of only being bounded during aggregation.
-- [ ] Expand the `grade-guard/unit-tests/` framework beyond shared vector, lifecycle, persistence-contract, and Unit 5 defect regression coverage.
-- [ ] Finish Unit 6.2 release-artifact updates, changelog alignment, and final release-readiness approval.
-- [ ] Expand grade summaries and reporting for easier semester planning.
-- [ ] Evaluate cross-platform terminal support after the Windows prototype stabilizes.
+- Tighten controller-side numeric input validation so malformed text is rejected earlier.
+- Expand semester summary and reporting views.
+- Add broader automated coverage around interactive console workflows.
+- Evaluate a portable terminal abstraction after the Windows-first release baseline stabilizes.
 
 See the [open issues](https://github.com/zcalifornia-ph/grade-guard/issues) for planned improvements and known gaps.
 
@@ -246,12 +227,6 @@ See the [open issues](https://github.com/zcalifornia-ph/grade-guard/issues) for 
 
 Contributions are welcome.
 Read `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `SECURITY.md` before opening a pull request.
-
-1. Fork the project.
-2. Create a branch for your change.
-3. Implement and manually verify the update.
-4. Document user-visible changes where needed.
-5. Open a pull request with a clear summary and verification notes.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -282,9 +257,9 @@ Twitter: [@zcalifornia_](https://twitter.com/zcalifornia_)
 
 ## Acknowledgments
 
-- Ravhen M. Grageda, Charisse C. Lorejo, and Jhaye Marie H. Gonzales for the original project team named in the source header.
+- Ravhen M. Grageda, Charisse C. Lorejo, and Jhaye Marie H. Gonzales for the original project team named in the source headers.
 - University of the Philippines Mindanao, where the project originated as a course deliverable.
-- Students and contributors interested in practical academic tracking tools.
+- Students and contributors interested in practical academic planning tools.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -302,4 +277,3 @@ Twitter: [@zcalifornia_](https://twitter.com/zcalifornia_)
 [linkedin-url]: https://linkedin.com/in/zcalifornia
 [product-screenshot]: repo/images/project_screen.png
 [repo-url]: https://github.com/zcalifornia-ph/grade-guard
-

@@ -2,15 +2,15 @@
 
 ## Scope
 
-Grade Guard is currently an early Windows console prototype that handles local student-profile data and grade records.
-Security concerns may include memory-safety issues, unsafe file handling, CSV parsing flaws, unintended data exposure, or behavior that could corrupt saved records.
+Grade Guard is a Windows console application that handles local student-profile data, course structures, and grade records.
+Security concerns may include memory-safety issues, unsafe file handling, CSV parsing flaws, unintended local data exposure, or behavior that could corrupt saved records.
 
 ## Supported Versions
 
 | Version | Supported |
 | --- | --- |
-| 0.1.x | yes |
-| 0.0.x | no |
+| 1.0.x | yes |
+| 0.x | no |
 | Unreleased snapshots older than the current repository state | no |
 
 ## Reporting a Vulnerability

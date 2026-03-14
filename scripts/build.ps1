@@ -1,5 +1,5 @@
 param(
-    [string]$OutputPath = "artifacts/unit-6-bolt-6-1/grade-guard.exe"
+    [string]$OutputPath = "artifacts/build/grade-guard.exe"
 )
 
 $ErrorActionPreference = "Stop"
