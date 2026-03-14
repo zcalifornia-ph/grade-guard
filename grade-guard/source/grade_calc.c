@@ -267,13 +267,134 @@ float calculate_goal_percentage(float predicted_gwa, float goal_gwa)
     return 0.0f;
 }
 
+static float clamp_activity_score(float score, float total_score)
+{
+    if (score < 0.0f) {
+        return 0.0f;
+    }
+
+    if (score > total_score) {
+        return total_score;
+    }
+
+    return score;
+}
+
+static int component_has_grade_data(const Course_Component* component)
+{
+    size_t i;
+    size_t j;
+
+    if (!component || !component->parameters) {
+        return 0;
+    }
+
+    for (i = 0; i < vector_size(component->parameters); i++) {
+        Course_Parameter* parameter = (Course_Parameter*)vector_at(component->parameters, i);
+
+        if (!parameter || !parameter->activities) {
+            continue;
+        }
+
+        for (j = 0; j < vector_size(parameter->activities); j++) {
+            Activities* activity = (Activities*)vector_at(parameter->activities, j);
+
+            if (activity && activity->total_score > 0.0f) {
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static float calculate_component_percentage(const Course_Component* component)
+{
+    float component_percentage;
+    size_t i;
+    size_t j;
+
+    if (!component || !component->parameters) {
+        return 0.0f;
+    }
+
+    component_percentage = 0.0f;
+    for (i = 0; i < vector_size(component->parameters); i++) {
+        Course_Parameter* parameter = (Course_Parameter*)vector_at(component->parameters, i);
+        float parameter_total_score;
+        float parameter_actual_score;
+
+        if (!parameter || !parameter->activities) {
+            continue;
+        }
+
+        parameter_total_score = 0.0f;
+        parameter_actual_score = 0.0f;
+        for (j = 0; j < vector_size(parameter->activities); j++) {
+            Activities* activity = (Activities*)vector_at(parameter->activities, j);
+
+            if (!activity || activity->total_score <= 0.0f) {
+                continue;
+            }
+
+            parameter_total_score += activity->total_score;
+            parameter_actual_score += clamp_activity_score(activity->score, activity->total_score);
+        }
+
+        if (parameter_total_score > 0.0f) {
+            float parameter_percentage = parameter_actual_score / parameter_total_score;
+
+            component_percentage += parameter_percentage * (parameter->weight / 100.0f);
+        }
+    }
+
+    return component_percentage;
+}
+
+static int profile_has_grade_data(Student_Profile* profile)
+{
+    size_t i;
+
+    if (!profile || !profile->courses || vector_size(profile->courses) == 0) {
+        return 0;
+    }
+
+    for (i = 0; i < vector_size(profile->courses); i++) {
+        Course* course = (Course*)vector_at(profile->courses, i);
+
+        if (!course || course->units <= 0.0f) {
+            continue;
+        }
+
+        if (component_has_grade_data(&course->lecture) ||
+            (course->lab_flag && component_has_grade_data(&course->lab))) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+bool calculate_predicted_gwa(Student_Profile* profile, float* predicted_gwa)
+{
+    if (!predicted_gwa) {
+        return false;
+    }
+
+    *predicted_gwa = 0.0f;
+    if (!profile_has_grade_data(profile)) {
+        return false;
+    }
+
+    *predicted_gwa = percentage_to_gwa(calculate_weighted_average(profile));
+    return true;
+}
+
 float calculate_weighted_average(Student_Profile* profile)
 {
     float gwa;
     float total_units;
     size_t i;
-    size_t j;
-    size_t k;
 
     if (!profile || !profile->courses || vector_size(profile->courses) == 0) {
         return 0.0f;
@@ -281,11 +402,10 @@ float calculate_weighted_average(Student_Profile* profile)
 
     gwa = 0.0f;
     total_units = 0.0f;
-
     for (i = 0; i < vector_size(profile->courses); i++) {
         Course* course = (Course*)vector_at(profile->courses, i);
 
-        if (course) {
+        if (course && course->units > 0.0f) {
             total_units += course->units;
         }
     }
@@ -299,81 +419,15 @@ float calculate_weighted_average(Student_Profile* profile)
         float course_percentage;
         float lecture_percentage;
         float lab_percentage;
-        Course_Component component;
 
-        if (!course) {
+        if (!course || course->units <= 0.0f) {
             continue;
         }
 
-        course_percentage = 0.0f;
-        lecture_percentage = 0.0f;
-        lab_percentage = 0.0f;
-        component = course->lecture;
-
-        for (j = 0; j < vector_size(component.parameters); j++) {
-            Course_Parameter* parameter = (Course_Parameter*)vector_at(component.parameters, j);
-            float parameter_total_score;
-            float parameter_actual_score;
-            size_t parameter_activity_count;
-
-            if (!parameter || !parameter->activities) {
-                continue;
-            }
-
-            parameter_total_score = 0.0f;
-            parameter_actual_score = 0.0f;
-            parameter_activity_count = vector_size(parameter->activities);
-
-            for (k = 0; k < parameter_activity_count; k++) {
-                Activities* activity = (Activities*)vector_at(parameter->activities, k);
-
-                if (activity && activity->total_score > 0.0f && activity->score > 0.0f) {
-                    parameter_actual_score += activity->score;
-                    parameter_total_score += activity->total_score;
-                }
-            }
-
-            if (parameter_activity_count > 0 && parameter_total_score > 0.0f) {
-                float parameter_percentage = parameter_actual_score / parameter_total_score;
-
-                lecture_percentage += parameter_percentage * (parameter->weight / 100.0f);
-            }
-        }
-
+        lecture_percentage = calculate_component_percentage(&course->lecture);
+        lab_percentage = course->lab_flag ? calculate_component_percentage(&course->lab) : 0.0f;
         if (course->lab_flag) {
-            component = course->lab;
-
-            for (j = 0; j < vector_size(component.parameters); j++) {
-                Course_Parameter* parameter = (Course_Parameter*)vector_at(component.parameters, j);
-                float parameter_total_score;
-                float parameter_actual_score;
-                size_t parameter_activity_count;
-
-                if (!parameter || !parameter->activities) {
-                    continue;
-                }
-
-                parameter_total_score = 0.0f;
-                parameter_actual_score = 0.0f;
-                parameter_activity_count = vector_size(parameter->activities);
-
-                for (k = 0; k < parameter_activity_count; k++) {
-                    Activities* activity = (Activities*)vector_at(parameter->activities, k);
-
-                    if (activity && activity->total_score > 0.0f && activity->score > 0.0f) {
-                        parameter_actual_score += activity->score;
-                        parameter_total_score += activity->total_score;
-                    }
-                }
-
-                if (parameter_activity_count > 0 && parameter_total_score > 0.0f) {
-                    float parameter_percentage = parameter_actual_score / parameter_total_score;
-
-                    lab_percentage += parameter_percentage * (parameter->weight / 100.0f);
-                }
-            }
-
-            course_percentage = (lecture_percentage * 50.0f) + (lab_percentage * 50.0f);
+            course_percentage = (lecture_percentage * 0.5f) + (lab_percentage * 0.5f);
         } else {
             course_percentage = lecture_percentage;
         }
@@ -387,3 +441,4 @@ float calculate_weighted_average(Student_Profile* profile)
 
     return 0.0f;
 }
+

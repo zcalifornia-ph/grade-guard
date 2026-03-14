@@ -403,6 +403,10 @@ static Course_Component* controller_select_component(Student_Profile* profile, C
         (const char* const[]){"Lecture", "Laboratory"}
     );
 
+    if (selected < 0) {
+        return NULL;
+    }
+
     if (selected == 1) {
         return &course->lab;
     }
@@ -728,6 +732,10 @@ static void controller_run_activity_operations(Student_Profile* profile)
             "Delete Activity",
             "Back"
         );
+        if (selected < 0) {
+            ui_clear_screen();
+            return;
+        }
 
         switch (selected) {
             case 0:
@@ -899,6 +907,10 @@ static void controller_run_parameter_operations(Student_Profile* profile, Course
             "Delete Parameter",
             "Back"
         );
+        if (selected < 0) {
+            ui_clear_screen();
+            return;
+        }
 
         switch (selected) {
             case 0:
@@ -984,6 +996,10 @@ static void controller_run_course_operations(Student_Profile* profile)
             "Course Parameters",
             "Back"
         );
+        if (selected < 0) {
+            ui_clear_screen();
+            return;
+        }
 
         switch (selected) {
             case 0:
@@ -1022,6 +1038,10 @@ static void controller_run_profile_settings(Student_Profile* profile)
             "Set Grade Goal",
             "Back"
         );
+        if (selected < 0) {
+            ui_clear_screen();
+            return;
+        }
 
         switch (selected) {
             case 0:
@@ -1159,13 +1179,18 @@ void ui_show_profile_header(Student_Profile* profile)
     printf("    Degree Program: %s\n", profile->degree_program ? profile->degree_program : "N/A");
     printf("    Grade Goal: %.2f\n\n", profile->goal);
 
-    profile->predicted_gwa = percentage_to_gwa(calculate_weighted_average(profile));
+    if (calculate_predicted_gwa(profile, &profile->predicted_gwa)) {
+        printf("    Predicted GWA: %.2f\n", profile->predicted_gwa);
+        printf(
+            "    Percent of Goal: %.2f%%\n\n",
+            calculate_goal_percentage(profile->predicted_gwa, profile->goal)
+        );
+        return;
+    }
 
-    printf("    Predicted GWA: %.2f\n", profile->predicted_gwa);
-    printf(
-        "    Percent of Goal: %.2f%%\n\n",
-        calculate_goal_percentage(profile->predicted_gwa, profile->goal)
-    );
+    profile->predicted_gwa = 0.0f;
+    printf("    Predicted GWA: N/A\n");
+    printf("    Percent of Goal: N/A\n\n");
 }
 
 Student_Profile* profile_select_by_student_number(Vector* student_profiles)
@@ -1218,6 +1243,10 @@ void ui_profile_login(Student_Profile* profile)
             "View Grades",
             "Logout"
         );
+        if (selected < 0) {
+            ui_clear_screen();
+            return;
+        }
 
         switch (selected) {
             case 0:
@@ -1326,3 +1355,4 @@ Student_Profile create_new_profile(void)
 
     return profile;
 }
+

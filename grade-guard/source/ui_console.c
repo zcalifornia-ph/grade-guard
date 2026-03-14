@@ -528,6 +528,7 @@ int ui_selection(const char* heading, const char* message, UiListMode list_mode,
     int i;
     int input;
     int selected;
+    int selection_status;
     int y;
     va_list args;
 
@@ -550,9 +551,15 @@ int ui_selection(const char* heading, const char* message, UiListMode list_mode,
 
         gotoxy(0, y + size);
         input = ui_read_key();
-        if (ui_selection_handler(input, &selected, UI_SELECTION_BOTH, 0, size) == -2) {
+        selection_status = ui_selection_handler(input, &selected, UI_SELECTION_BOTH, 0, size);
+        if (selection_status == UI_SELECTION_STATUS_CONFIRM) {
             ui_clear_screen();
             break;
+        }
+
+        if (selection_status == UI_SELECTION_STATUS_CANCEL) {
+            ui_clear_screen();
+            return -1;
         }
     }
 
@@ -564,6 +571,7 @@ int ui_selection_array(const char* heading, const char* message, UiListMode list
     int i;
     int input;
     int selected;
+    int selection_status;
     int y;
 
     selected = 0;
@@ -583,9 +591,15 @@ int ui_selection_array(const char* heading, const char* message, UiListMode list
 
         gotoxy(0, y + size);
         input = ui_read_key();
-        if (ui_selection_handler(input, &selected, UI_SELECTION_BOTH, 0, size) == -2) {
+        selection_status = ui_selection_handler(input, &selected, UI_SELECTION_BOTH, 0, size);
+        if (selection_status == UI_SELECTION_STATUS_CONFIRM) {
             ui_clear_screen();
             break;
+        }
+
+        if (selection_status == UI_SELECTION_STATUS_CANCEL) {
+            ui_clear_screen();
+            return -1;
         }
     }
 
@@ -595,7 +609,11 @@ int ui_selection_array(const char* heading, const char* message, UiListMode list
 int ui_selection_handler(int key_code, int* selected, UiSelectionAxis axis, int lower_bound, int upper_bound)
 {
     if (key_code == UI_KEY_ENTER) {
-        return -2;
+        return UI_SELECTION_STATUS_CONFIRM;
+    }
+
+    if (key_code == UI_KEY_ESCAPE) {
+        return UI_SELECTION_STATUS_CANCEL;
     }
 
     switch (axis) {
@@ -636,10 +654,10 @@ int ui_selection_handler(int key_code, int* selected, UiSelectionAxis axis, int 
             break;
 
         default:
-            return -1;
+            return UI_SELECTION_STATUS_INVALID;
     }
 
-    return 0;
+    return UI_SELECTION_STATUS_CONTINUE;
 }
 
 void ui_color(UiColor text_color, UiColor background_color)
@@ -759,3 +777,4 @@ void ui_show_failure(const char* message)
 
     ui_clear_screen();
 }
+

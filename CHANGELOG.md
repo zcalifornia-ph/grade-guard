@@ -1,6 +1,39 @@
 # Changelog
 
-Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, repository-wide source attribution coverage, and a Unit 5 defect-baseline register.
+Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, grade-engine, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, repository-wide source attribution coverage, and validated Unit 5 defect fixes; remaining live Windows workflow review and Unit 6 release-readiness work are still pending.
+
+## v0.1.12 - 2026-03-14
+
+### Added or Changed
+- Updated `README.md` from `v0.1.11` to `v0.1.12`, refreshed the top-level project status/progress snapshot for completed Unit 5 remediation, documented the post-fix Unit 5 regression command, and pointed the release trail at the new `v0.1.12` notes plus the Unit 5 before/after bolt docs.
+- Added `docs/version-0-1-12-docs.md` with the fuller explanation of the Unit 5 fix scope, validation evidence, remaining manual-review gap, and cleanup guidance for generated artifacts.
+- Added `docs/unit-5-bolt-5-2-defect-fixes.md` to document the Bolt 5.2 contract, ADR bullets, final defect outcomes, regression coverage, and review status.
+- Updated `grade-guard/header/grade_calc.h` and `grade-guard/source/grade_calc.c` so zero-score activities count toward weighted averages, lab-course weighting stays normalized, over-total scores are bounded safely during aggregation, and predicted GWA rendering can distinguish no-data profiles through `calculate_predicted_gwa()`.
+- Updated `grade-guard/header/ui_console.h`, `grade-guard/source/ui_console.c`, and `grade-guard/source/profile_controller.c` so shared selection handling returns an explicit cancel status on `Esc`, affected controller screens back out cleanly on cancel, and empty/zero-unit profiles render `Predicted GWA: N/A` instead of a fabricated `5.00`.
+- Updated `grade-guard/unit-tests/unit5_defect_baseline_test.c` from a baseline defect-reproduction harness into a fixed-behavior regression suite covering zero-score inclusion, normalized lab weighting, bounded over-total scores, zero-course and zero-unit no-data handling, valid all-zero-coursework `5.00` rendering, and shared `Esc` cancellation.
+- Kept `CONTRIBUTING.md`, `SECURITY.md`, and `CODE_OF_CONDUCT.md` unchanged because this version changes runtime behavior and release documentation, not contributor workflow policy, vulnerability-reporting policy, or community-governance rules.
+
+### For Deletion
+- `grade-guard.exe` (root-level local binary artifact present in the workspace).
+- `grade-guard/build-smoke/` (smoke-build output directory still present in the workspace).
+- `grade-guard/0.csv` (numbered profile output currently present in the working directory).
+- `grade-guard/bolt-4-1-main.exe` (local acceptance-build artifact from the prior Bolt 4.1 validation run).
+- `grade-guard/bolt-4-2-main.exe` (local acceptance-build artifact generated while validating Bolt 4.2).
+- `grade-guard/bolt-5-1-main.exe` (local acceptance-build artifact generated while validating Bolt 5.1).
+- `grade-guard/bolt-5-2-main.exe` (local acceptance-build artifact generated while validating Bolt 5.2).
+- `grade-guard/tests/vector_test.exe` (local vector regression-test binary present in the workspace).
+- `grade-guard/unit-tests/models_lifecycle_test.exe` (local lifecycle regression-test binary present in the workspace).
+- `grade-guard/unit-tests/persistence_contract_test.exe` (local persistence-contract regression binary present in the workspace).
+- `grade-guard/unit-tests/unit5_defect_baseline_test.exe` (local Unit 5 defect-regression binary present in the workspace).
+- `grade-guard/unit-tests/persistence-blank-lines.csv` (generated blank-line fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-invalid-number.csv` (generated invalid-number fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-legacy-fixture.csv` (generated legacy compatibility fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-missing-field.csv` (generated missing-field fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-oversized-record.csv` (generated oversized-record fixture output from the persistence regression).
+- `grade-guard/unit-tests/persistence-shape-lecture.csv` (generated round-trip lecture-only output from the persistence regression).
+- `grade-guard/unit-tests/persistence-shape-lab.csv` (generated round-trip lab-course output from the persistence regression).
+- `grade-guard/unit-tests/persistence-shape-mixed.csv` (generated round-trip mixed-profile output from the persistence regression).
+- `grade-guard/unit-tests/persistence-runtime/` (generated numbered runtime-output directory from the persistence regression and currently containing `0.csv` and `1.csv`).
 
 ## v0.1.11 - 2026-03-14
 
@@ -255,3 +288,4 @@ Status: source-backed Windows console grade-tracking prototype with extracted ut
 
 ### For Deletion
 - None from this task context (documentation-only initialization; no generated build artifacts were created).
+

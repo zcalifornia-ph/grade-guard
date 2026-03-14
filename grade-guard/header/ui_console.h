@@ -239,6 +239,13 @@ typedef enum UiSelectionAxis {
     UI_SELECTION_BOTH = 2
 } UiSelectionAxis;
 
+typedef enum UiSelectionStatus {
+    UI_SELECTION_STATUS_INVALID = -1,
+    UI_SELECTION_STATUS_CONTINUE = 0,
+    UI_SELECTION_STATUS_CONFIRM = -2,
+    UI_SELECTION_STATUS_CANCEL = -3
+} UiSelectionStatus;
+
 typedef enum UiKeyCode {
     UI_KEY_LEFT_ARROW = 75,
     UI_KEY_RIGHT_ARROW = 77,
@@ -292,3 +299,4 @@ void ui_field_input(const char* field_name, Vector* field_vector);
 void ui_show_failure(const char* message);
 
 #endif
+

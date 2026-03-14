@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.1.11
+    Version: v0.1.12
     <br />
-    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, repository-wide source attribution coverage, and a Unit 5 defect-baseline register; Unit 4 review and Unit 5 fix-scope approval are still pending
+    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, grade-engine, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, repository-wide source attribution coverage, and validated Unit 5 defect fixes; remaining live Windows workflow review and Unit 6 release-readiness work are still pending
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-11-docs.md"><strong>Version 0.1.11 notes</strong></a>
+    <a href="docs/version-0-1-12-docs.md"><strong>Version 0.1.12 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -70,10 +70,10 @@ That planning baseline is now accompanied by `docs/unit-1-bolt-1-1-monolith-inve
 Unit 2 now includes the first real extracted utility and domain modules: the shared vector implementation in `grade-guard/source/vector.c`, the domain/lifecycle implementation in `grade-guard/source/models.c`, and their public APIs in `grade-guard/header/vector.h` plus `grade-guard/header/models.h`.
 Unit 3 now includes both the shared UI/platform layer and the extracted controller path: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c` own the reusable Windows console primitives, `grade-guard/source/app.c` owns startup and top-level menu orchestration, and `grade-guard/source/profile_controller.c` now owns the interactive profile/course/activity workflows.
 Unit 4 now includes both the versioned persistence boundary and the next hardening pass: `grade-guard/header/persistence.h` and `grade-guard/source/persistence.c` now expose a status-based save/load/list API, write the versioned `GRADE_GUARD_CSV,1` schema for new saves, still load historical unversioned profile files through a documented compatibility path, reject oversized logical records safely, and refuse save-side rows that exceed the supported parser contract.
-Unit 5 now adds a baseline defect register and a focused grade-engine/menu repro harness: `docs/unit-5-bolt-5-1-defect-baseline.md` records the severity rubric, defect register, and proposed first-release fix set, while `grade-guard/unit-tests/unit5_defect_baseline_test.c` proves the confirmed baseline defects before Bolt 5.2 changes behavior.
-Focused regression coverage now exists for the shared vector layer, the domain lifecycle layer, the persistence contract, and the Unit 5 baseline defect set through `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, `grade-guard/unit-tests/persistence_contract_test.c`, and `grade-guard/unit-tests/unit5_defect_baseline_test.c`.
+Unit 5 now closes the first defect-remediation cycle: `docs/unit-5-bolt-5-1-defect-baseline.md` records the baseline defect inventory, `docs/unit-5-bolt-5-2-defect-fixes.md` records the final outcomes and validation evidence, and `grade-guard/unit-tests/unit5_defect_baseline_test.c` now runs as a focused regression harness for the fixed grade-engine and selection-flow behaviors.
+Focused regression coverage now exists for the shared vector layer, the domain lifecycle layer, the persistence contract, and the Unit 5 defect-fix set through `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, `grade-guard/unit-tests/persistence_contract_test.c`, and `grade-guard/unit-tests/unit5_defect_baseline_test.c`.
 This repository state also normalizes a shared attribution-and-license header across every tracked `.c` and `.h` file under `grade-guard/`, so course provenance, authorship, and licensing remain visible even when an individual file is viewed on its own.
-Detailed version notes for this Unit 5 defect-baseline update are available in `docs/version-0-1-11-docs.md`, and the latest Bolt-specific boundary/evidence note is `docs/unit-5-bolt-5-1-defect-baseline.md`.
+Detailed version notes for this Unit 5 defect-fix update are available in `docs/version-0-1-12-docs.md`, and the latest Bolt-specific before/after trail is `docs/unit-5-bolt-5-1-defect-baseline.md` plus `docs/unit-5-bolt-5-2-defect-fixes.md`.
 
 ### What Grade Guard Does
 
@@ -90,16 +90,16 @@ Detailed version notes for this Unit 5 defect-baseline update are available in `
 - Windows-only for now because the program depends on `windows.h` and `conio.h`.
 - The main entry point is now thin, but the extracted interactive workflow path still depends on live console behavior and has not been covered by controller-level automated tests yet.
 - Uses local CSV persistence with a versioned save format, legacy load compatibility, and malformed/oversized record hardening, but live review of the end-user persistence failure flow, release automation, and broad end-to-end coverage are still incomplete.
-- The Unit 5 defect baseline confirms unresolved correctness and UX issues in zero-score handling, lab-course weighting, empty-profile GWA rendering, and shared menu cancellation; Bolt 5.2 has not fixed those behaviors yet.
-- Numeric entry still accepts malformed or out-of-range values such as scores above the declared total score, so impossible percentages can still be produced on the baseline.
-- Windows console redraw, clear-screen, fullscreen, and raw-key behavior still depend on the active host, so Unit 3 workflow changes still require a live manual acceptance run in addition to compile/test checks.
-- Local binaries and editor scratch files still require manual cleanup before committing.
+- The Unit 5 fixes are validated in targeted regression tests, but the affected Windows console flows still need a manual acceptance walkthrough to confirm `Esc` cancellation and no-data profile rendering under a real host.
+- Numeric entry still accepts malformed or out-of-range text at the controller layer; the grade engine now bounds over-total scores and distinguishes no-data profiles, but input rejection is still not enforced at entry time.
+- Windows console redraw, clear-screen, fullscreen, and raw-key behavior still depend on the active host, so Unit 3 and Unit 5 workflow changes still require a live manual acceptance run in addition to compile/test checks.
+- Local binaries, generated CSV fixtures, and editor scratch files still require manual cleanup before committing.
 
 ### Current Planning Baseline
 
 - Refactor target: split `grade-guard/main.c` into focused modules under `grade-guard/header/` and `grade-guard/source/`.
 - Entry-point target: keep `grade-guard/main.c` small and orchestration-only.
-- Defect focus: memory ownership, string/buffer safety, CSV parsing robustness, selection flow, and grade-calculation edge cases.
+- Defect focus: controller-side numeric validation, remaining live Windows workflow review, CSV parsing robustness, and Unit 6 release readiness.
 - Planning artifact: `REQUIREMENTS.md`
 - Architecture inventory: `docs/unit-1-bolt-1-1-monolith-inventory.md`
 - Scaffold inventory: `docs/unit-1-bolt-1-2-module-scaffold.md`
@@ -110,7 +110,8 @@ Detailed version notes for this Unit 5 defect-baseline update are available in `
 - Persistence-contract note: `docs/unit-4-bolt-4-1-persistence-contract.md`
 - Persistence-hardening note: `docs/unit-4-bolt-4-2-persistence-hardening.md`
 - Unit 5 defect-baseline note: `docs/unit-5-bolt-5-1-defect-baseline.md`
-- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, Bolt 2.2 domain lifecycle extraction, Bolt 3.2 controller extraction, Bolt 4.1 persistence-contract hardening, Bolt 4.2 parsing/serialization hardening, and Bolt 5.1 defect baselining/prioritization are recorded with evidence; Unit 1 and Unit 2 review gates plus the remaining Unit 4 review gate and Unit 5 fix-scope approval are still pending.
+- Unit 5 defect-fix note: `docs/unit-5-bolt-5-2-defect-fixes.md`
+- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, Bolt 2.2 domain lifecycle extraction, Bolt 3.2 controller extraction, Bolt 4.1 persistence-contract hardening, Bolt 4.2 parsing/serialization hardening, and Bolt 5.2 defect remediation are recorded with evidence; the remaining open work centers on older review gates, live Windows workflow validation, controller-side numeric rejection, and Unit 6 release readiness.
 
 ### Current Implementation Snapshot
 
@@ -121,18 +122,20 @@ Detailed version notes for this Unit 5 defect-baseline update are available in `
 - Shared utility module: `grade-guard/header/vector.h` and `grade-guard/source/vector.c`
 - Shared domain module: `grade-guard/header/models.h` and `grade-guard/source/models.c`
 - Grade engine module: `grade-guard/header/grade_calc.h` and `grade-guard/source/grade_calc.c`
+- Grade-engine hardening behaviors: zero scores count toward denominators, lab components use normalized 50/50 weighting, over-total scores are bounded during aggregation, and predicted GWA can report a no-data state through `calculate_predicted_gwa()`
 - Persistence module: `grade-guard/header/persistence.h` and `grade-guard/source/persistence.c`
 - Persistence hardening behaviors: overflow-aware record reads, save-side row-length validation, and status-specific load/save failure messages in `app.c`
 - Shared UI/platform module: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c`
+- Selection-cancel contract: `ui_selection_handler()` now exposes `UI_SELECTION_STATUS_CANCEL`, and the touched controller menus/selectors honor `Esc` as a real back-out path
 - Focused regression harnesses: `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, `grade-guard/unit-tests/persistence_contract_test.c`, and `grade-guard/unit-tests/unit5_defect_baseline_test.c`
 - Unit-test support: `grade-guard/unit-tests/test_framework.h`
-- Unit 5 defect register: `docs/unit-5-bolt-5-1-defect-baseline.md`
+- Unit 5 defect notes: `docs/unit-5-bolt-5-1-defect-baseline.md` and `docs/unit-5-bolt-5-2-defect-fixes.md`
 - Source attribution baseline: standardized university/course/license header block across every tracked `.c` and `.h` file under `grade-guard/`
-- UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, and shared screen/cursor/field/selection helpers behind `ui_console`
+- UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, `Esc`, and shared screen/cursor/field/selection helpers behind `ui_console`
 - Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
 - Academic model: lecture components plus optional laboratory components, each with weighted parameters and activity scores
 - Persistence model: numbered working-directory CSV files using the versioned `GRADE_GUARD_CSV,1` schema for new saves, with legacy load compatibility for historical files
-- Confirmed baseline defect classes: zero-score exclusion, lab-course weighting overflow, over-total score acceptance, empty-profile GWA rendering, and missing `Esc` cancel behavior in the shared selection handler
+- Resolved Unit 5 defect classes: zero-score inclusion, normalized lab-course weighting, bounded over-total scores, no-data predicted-GWA rendering, and shared `Esc` cancel propagation
 
 ### Built With
 
@@ -202,14 +205,14 @@ gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/unit-test
 
 That persistence regression now covers round-trip behavior, legacy compatibility, blank-line tolerance, missing fields, invalid numeric tokens, and oversized record rejection.
 
-Run the Unit 5 defect-baseline regression test with GCC:
+Run the Unit 5 defect regression test with GCC:
 
 ```sh
 gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/unit-tests/unit5_defect_baseline_test.c grade-guard/source/grade_calc.c grade-guard/source/models.c grade-guard/source/vector.c grade-guard/source/ui_console.c -o grade-guard/unit-tests/unit5_defect_baseline_test.exe
 .\grade-guard/unit-tests/unit5_defect_baseline_test.exe
 ```
 
-That baseline harness proves the currently confirmed unfixed defects around zero-score handling, lab-course weighting, over-total score acceptance, empty-profile GWA rendering, and shared selection-handler `Esc` behavior.
+That regression harness now validates zero-score inclusion, normalized lab weighting, bounded over-total scores, no-data profile handling, valid all-zero-coursework `5.00` rendering, and shared selection-handler `Esc` cancellation.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -217,7 +220,7 @@ That baseline harness proves the currently confirmed unfixed defects around zero
 
 Typical flow inside the application:
 
-Navigation is keyboard-driven through the Windows console UI and relies on arrow keys plus `Enter`.
+Navigation is keyboard-driven through the Windows console UI and relies on arrow keys, `Enter`, and on selection screens `Esc` for cancel/back-out behavior.
 
 1. Select `New Profile` and enter your student details.
 2. Add one or more courses, including units and whether a course has a laboratory component.
@@ -237,11 +240,11 @@ You can also reopen an existing profile by student number through the `Select Pr
 - [ ] Review the new `grade-guard/header/` and `grade-guard/source/` scaffold and confirm the public interfaces are stable enough for extraction.
 - [ ] Review and approve Unit 2 data ownership and lifecycle rules now that Bolt 2.2 is implemented.
 - [ ] Review and approve the Unit 4 CSV schema, numbered-file contract, and legacy compatibility approach.
-- [ ] Review the new Unit 4 / Bolt 4.2 malformed/truncated CSV hardening and confirm the user-visible persistence failure flow in a live console pass.
-- [ ] Review and approve the Unit 5 defect list and the Bolt 5.2 first-release fix scope.
-- [ ] Fix the confirmed Unit 5 grade-engine and selection-flow defects, then rerun zero-score, zero-course, and malformed-input regressions.
-- [ ] Improve numeric-input validation beyond the current baseline so impossible scores and malformed values are rejected before they reach the grade engine.
-- [ ] Expand the `grade-guard/unit-tests/` framework beyond shared vector, lifecycle, persistence-contract, and defect-baseline coverage.
+- [ ] Review the Unit 4 / Bolt 4.2 malformed/truncated CSV hardening and confirm the user-visible persistence failure flow in a live console pass.
+- [ ] Perform a live Windows console walkthrough of the fixed Unit 5 cancel/no-data flows and confirm the user-facing behavior under a real host.
+- [ ] Improve controller-side numeric validation so malformed values are rejected before they reach the grade engine instead of only being bounded during aggregation.
+- [ ] Expand the `grade-guard/unit-tests/` framework beyond shared vector, lifecycle, persistence-contract, and Unit 5 defect regression coverage.
+- [ ] Finalize Unit 6 build, smoke-test, and release-readiness documentation.
 - [ ] Expand grade summaries and reporting for easier semester planning.
 - [ ] Evaluate cross-platform terminal support after the Windows prototype stabilizes.
 
@@ -309,3 +312,4 @@ Twitter: [@zcalifornia_](https://twitter.com/zcalifornia_)
 [linkedin-url]: https://linkedin.com/in/zcalifornia
 [product-screenshot]: repo/images/project_screen.png
 [repo-url]: https://github.com/zcalifornia-ph/grade-guard
+

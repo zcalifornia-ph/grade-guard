@@ -232,6 +232,8 @@ extern const float GRADE_GOALS[GRADE_GUARD_GRADE_GOAL_COUNT];
 
 float percentage_to_gwa(float percentage);
 float calculate_goal_percentage(float predicted_gwa, float goal_gwa);
+bool calculate_predicted_gwa(Student_Profile* profile, float* predicted_gwa);
 float calculate_weighted_average(Student_Profile* profile);
 
 #endif
+

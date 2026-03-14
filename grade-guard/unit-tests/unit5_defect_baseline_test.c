@@ -1,5 +1,5 @@
 /*
-Unit 5 baseline defect reproductions for the extracted grade engine and menu flow.
+Unit 5 regression coverage for the extracted grade engine and menu flow.
 */
 
 #include <stdio.h>
@@ -95,19 +95,19 @@ static int append_activity(Course_Parameter* parameter, float score, float total
     return 1;
 }
 
-static void test_zero_score_activity_is_ignored(TestContext* context)
+static void test_zero_score_activity_counts_in_weighted_average(TestContext* context)
 {
     Student_Profile profile = {0};
     Course* course;
     Course_Parameter* parameter;
     float observed_average;
 
-    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for zero-score baseline");
-    TEST_EXPECT(context, append_course(&profile, 3.0f, 0, &course), "course append should succeed for zero-score baseline");
+    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for zero-score regression");
+    TEST_EXPECT(context, append_course(&profile, 3.0f, 0, &course), "course append should succeed for zero-score regression");
     TEST_EXPECT(
         context,
         append_parameter(&course->lecture, 100.0f, &parameter),
-        "parameter append should succeed for zero-score baseline"
+        "parameter append should succeed for zero-score regression"
     );
     TEST_EXPECT(context, append_activity(parameter, 0.0f, 100.0f), "zero-score activity append should succeed");
     TEST_EXPECT(context, append_activity(parameter, 100.0f, 100.0f), "non-zero activity append should succeed");
@@ -115,14 +115,14 @@ static void test_zero_score_activity_is_ignored(TestContext* context)
     observed_average = calculate_weighted_average(&profile);
     TEST_EXPECT(
         context,
-        float_close(1.0f, observed_average),
-        "baseline repro: zero-score activities are excluded from weighted-average totals"
+        float_close(0.5f, observed_average),
+        "zero-score activities should contribute to the weighted-average denominator"
     );
 
     student_profile_reset(&profile);
 }
 
-static void test_lab_course_scaling_explodes_course_percentage(TestContext* context)
+static void test_lab_course_scaling_stays_normalized(TestContext* context)
 {
     Student_Profile profile = {0};
     Course* course;
@@ -131,17 +131,17 @@ static void test_lab_course_scaling_explodes_course_percentage(TestContext* cont
     float observed_average;
     float observed_gwa;
 
-    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for lab-scaling baseline");
-    TEST_EXPECT(context, append_course(&profile, 3.0f, 1, &course), "course append should succeed for lab-scaling baseline");
+    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for lab-scaling regression");
+    TEST_EXPECT(context, append_course(&profile, 3.0f, 1, &course), "course append should succeed for lab-scaling regression");
     TEST_EXPECT(
         context,
         append_parameter(&course->lecture, 100.0f, &lecture_parameter),
-        "lecture parameter append should succeed for lab-scaling baseline"
+        "lecture parameter append should succeed for lab-scaling regression"
     );
     TEST_EXPECT(
         context,
         append_parameter(&course->lab, 100.0f, &lab_parameter),
-        "lab parameter append should succeed for lab-scaling baseline"
+        "lab parameter append should succeed for lab-scaling regression"
     );
     TEST_EXPECT(context, append_activity(lecture_parameter, 50.0f, 100.0f), "lecture activity append should succeed");
     TEST_EXPECT(context, append_activity(lab_parameter, 50.0f, 100.0f), "lab activity append should succeed");
@@ -150,19 +150,19 @@ static void test_lab_course_scaling_explodes_course_percentage(TestContext* cont
     observed_gwa = percentage_to_gwa(observed_average);
     TEST_EXPECT(
         context,
-        float_close(50.0f, observed_average),
-        "baseline repro: lab-course percentage uses 50x scaling instead of a 50 percent share"
+        float_close(0.5f, observed_average),
+        "lab-course percentages should stay within the normal 0.0 to 1.0 range"
     );
     TEST_EXPECT(
         context,
-        float_close(1.0f, observed_gwa),
-        "baseline repro: impossible lab-course percentages clamp to a perfect 1.00 GWA"
+        float_close(3.0f, observed_gwa),
+        "balanced lecture and lab performance should map to the expected midpoint GWA"
     );
 
     student_profile_reset(&profile);
 }
 
-static void test_over_total_scores_are_accepted(TestContext* context)
+static void test_over_total_scores_are_bounded(TestContext* context)
 {
     Student_Profile profile = {0};
     Course* course;
@@ -170,12 +170,12 @@ static void test_over_total_scores_are_accepted(TestContext* context)
     float observed_average;
     float observed_gwa;
 
-    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for over-total baseline");
-    TEST_EXPECT(context, append_course(&profile, 3.0f, 0, &course), "course append should succeed for over-total baseline");
+    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for over-total regression");
+    TEST_EXPECT(context, append_course(&profile, 3.0f, 0, &course), "course append should succeed for over-total regression");
     TEST_EXPECT(
         context,
         append_parameter(&course->lecture, 100.0f, &parameter),
-        "parameter append should succeed for over-total baseline"
+        "parameter append should succeed for over-total regression"
     );
     TEST_EXPECT(context, append_activity(parameter, 120.0f, 100.0f), "over-total activity append should succeed");
 
@@ -183,36 +183,103 @@ static void test_over_total_scores_are_accepted(TestContext* context)
     observed_gwa = percentage_to_gwa(observed_average);
     TEST_EXPECT(
         context,
-        float_close(1.2f, observed_average),
-        "baseline repro: scores greater than the activity total inflate averages beyond 100 percent"
+        float_close(1.0f, observed_average),
+        "scores greater than the activity total should clamp to 100 percent"
     );
     TEST_EXPECT(
         context,
         float_close(1.0f, observed_gwa),
-        "baseline repro: inflated averages from over-total scores clamp to a perfect 1.00 GWA"
+        "bounded over-total scores should not exceed the best possible GWA"
     );
 
     student_profile_reset(&profile);
 }
 
-static void test_zero_course_profiles_render_as_failing_gwa(TestContext* context)
+static void test_zero_course_profiles_render_as_no_data(TestContext* context)
 {
     Student_Profile profile = {0};
-    float observed_gwa;
+    float predicted_gwa;
 
-    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for zero-course baseline");
+    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for zero-course regression");
 
-    observed_gwa = percentage_to_gwa(calculate_weighted_average(&profile));
+    predicted_gwa = 9.9f;
     TEST_EXPECT(
         context,
-        float_close(5.0f, observed_gwa),
-        "baseline repro: empty profiles map to a displayed 5.00 predicted GWA instead of a no-data state"
+        !calculate_predicted_gwa(&profile, &predicted_gwa),
+        "profiles with no gradable courses should report a no-data state"
+    );
+    TEST_EXPECT(
+        context,
+        float_close(0.0f, predicted_gwa),
+        "no-data predicted GWA results should reset the output value"
     );
 
     student_profile_reset(&profile);
 }
 
-static void test_escape_key_is_ignored_by_selection_handler(TestContext* context)
+static void test_zero_unit_profiles_render_as_no_data(TestContext* context)
+{
+    Student_Profile profile = {0};
+    Course* course;
+    Course_Parameter* parameter;
+    float predicted_gwa;
+
+    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for zero-unit regression");
+    TEST_EXPECT(context, append_course(&profile, 0.0f, 0, &course), "course append should succeed for zero-unit regression");
+    TEST_EXPECT(
+        context,
+        append_parameter(&course->lecture, 100.0f, &parameter),
+        "parameter append should succeed for zero-unit regression"
+    );
+    TEST_EXPECT(context, append_activity(parameter, 100.0f, 100.0f), "activity append should succeed for zero-unit regression");
+
+    predicted_gwa = 9.9f;
+    TEST_EXPECT(
+        context,
+        !calculate_predicted_gwa(&profile, &predicted_gwa),
+        "profiles without positive-unit courses should report a no-data state"
+    );
+    TEST_EXPECT(
+        context,
+        float_close(0.0f, predicted_gwa),
+        "zero-unit profiles should clear predicted GWA output"
+    );
+
+    student_profile_reset(&profile);
+}
+
+static void test_valid_zero_scores_still_render_as_failing_gwa(TestContext* context)
+{
+    Student_Profile profile = {0};
+    Course* course;
+    Course_Parameter* parameter;
+    float predicted_gwa;
+
+    TEST_EXPECT(context, student_profile_init(&profile), "profile init should succeed for zero-grade regression");
+    TEST_EXPECT(context, append_course(&profile, 3.0f, 0, &course), "course append should succeed for zero-grade regression");
+    TEST_EXPECT(
+        context,
+        append_parameter(&course->lecture, 100.0f, &parameter),
+        "parameter append should succeed for zero-grade regression"
+    );
+    TEST_EXPECT(context, append_activity(parameter, 0.0f, 100.0f), "zero-score activity append should succeed for zero-grade regression");
+
+    predicted_gwa = 0.0f;
+    TEST_EXPECT(
+        context,
+        calculate_predicted_gwa(&profile, &predicted_gwa),
+        "valid grade data should still produce a predicted GWA"
+    );
+    TEST_EXPECT(
+        context,
+        float_close(5.0f, predicted_gwa),
+        "all-zero scored coursework should still render as a failing GWA"
+    );
+
+    student_profile_reset(&profile);
+}
+
+static void test_escape_key_returns_cancel_status(TestContext* context)
 {
     int selected;
     int status;
@@ -221,13 +288,13 @@ static void test_escape_key_is_ignored_by_selection_handler(TestContext* context
     status = ui_selection_handler(UI_KEY_ESCAPE, &selected, UI_SELECTION_BOTH, 0, 4);
     TEST_EXPECT(
         context,
-        status == 0,
-        "baseline repro: escape does not propagate a cancel status from the selection handler"
+        status == UI_SELECTION_STATUS_CANCEL,
+        "escape should propagate a cancel status from the selection handler"
     );
     TEST_EXPECT(
         context,
         selected == 1,
-        "baseline repro: escape leaves the current selection unchanged instead of backing out of the menu"
+        "escape should leave the current selection unchanged while cancelling the menu"
     );
 }
 
@@ -235,16 +302,18 @@ int main(void)
 {
     TestContext context = {0};
 
-    test_zero_score_activity_is_ignored(&context);
-    test_lab_course_scaling_explodes_course_percentage(&context);
-    test_over_total_scores_are_accepted(&context);
-    test_zero_course_profiles_render_as_failing_gwa(&context);
-    test_escape_key_is_ignored_by_selection_handler(&context);
+    test_zero_score_activity_counts_in_weighted_average(&context);
+    test_lab_course_scaling_stays_normalized(&context);
+    test_over_total_scores_are_bounded(&context);
+    test_zero_course_profiles_render_as_no_data(&context);
+    test_zero_unit_profiles_render_as_no_data(&context);
+    test_valid_zero_scores_still_render_as_failing_gwa(&context);
+    test_escape_key_returns_cancel_status(&context);
 
     if (context.failures != 0) {
         return 1;
     }
 
-    printf("unit 5 defect baseline reproductions passed\n");
+    printf("unit 5 defect regressions passed\n");
     return 0;
 }
