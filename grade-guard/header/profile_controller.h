@@ -213,17 +213,23 @@ Apache License
    limitations under the License.
 
 
-[main.c]
+[profile_controller.h]
 --------------------
 
-Program entry point that starts the Grade Guard application.
+Profile workflow declarations for creating, selecting, and presenting student profiles.
 
 --------------------
 */
 
-#include "header/app.h"
+#ifndef GRADE_GUARD_HEADER_PROFILE_CONTROLLER_H
+#define GRADE_GUARD_HEADER_PROFILE_CONTROLLER_H
 
-int main(void)
-{
-    return app_run();
-}
+#include "models.h"
+
+Student_Profile create_new_profile(void);
+void input_courses(Student_Profile* profile);
+void ui_show_profile_header(Student_Profile* profile);
+void ui_profile_login(Student_Profile* profile);
+Student_Profile* profile_select_by_student_number(Vector* student_profiles);
+
+#endif

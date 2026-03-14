@@ -213,17 +213,17 @@ Apache License
    limitations under the License.
 
 
-[main.c]
+[app.h]
 --------------------
 
-Program entry point that starts the Grade Guard application.
+Public interface for launching the Grade Guard application loop.
 
 --------------------
 */
 
-#include "header/app.h"
+#ifndef GRADE_GUARD_HEADER_APP_H
+#define GRADE_GUARD_HEADER_APP_H
 
-int main(void)
-{
-    return app_run();
-}
+int app_run(void);
+
+#endif

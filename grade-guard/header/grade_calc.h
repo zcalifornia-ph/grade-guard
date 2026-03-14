@@ -213,17 +213,27 @@ Apache License
    limitations under the License.
 
 
-[main.c]
+[grade_calc.h]
 --------------------
 
-Program entry point that starts the Grade Guard application.
+Grade computation declarations for GWA conversion and goal tracking.
 
 --------------------
 */
 
-#include "header/app.h"
+#ifndef GRADE_GUARD_HEADER_GRADE_CALC_H
+#define GRADE_GUARD_HEADER_GRADE_CALC_H
 
-int main(void)
-{
-    return app_run();
-}
+#include "models.h"
+
+#define GRADE_GUARD_GRADE_GOAL_COUNT 5
+
+extern const float GRADE_GOALS[GRADE_GUARD_GRADE_GOAL_COUNT];
+
+float percentage_to_gwa(float percentage);
+float calculate_goal_percentage(float predicted_gwa, float goal_gwa);
+bool calculate_predicted_gwa(Student_Profile* profile, float* predicted_gwa);
+float calculate_weighted_average(Student_Profile* profile);
+
+#endif
+

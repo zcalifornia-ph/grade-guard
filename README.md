@@ -13,15 +13,15 @@
   <h3 align="center">Grade Guard</h3>
 
   <p align="center">
-    <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
+    <strong>Grade Guard is a Windows console application for planning, tracking, and reviewing semester grades from local student profiles.</strong>
     <br />
-    Version: v0.1.0
+    Version: v1.0.0
     <br />
-    Status: first source-backed prototype / Windows-only academic codebase
+    Status: 1.0.0 release baseline for the Windows console application, with automated validation for core data, persistence, grade calculation, and app orchestration flows.
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-0-docs.md"><strong>Version 0.1.0 notes</strong></a>
+    <a href="docs/version-1-0-0-docs.md"><strong>Version 1.0.0 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -41,6 +41,7 @@
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
+    <li><a href="#project-layout">Project Layout</a></li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
@@ -49,6 +50,7 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
+    <li><a href="#validation">Validation</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -60,41 +62,75 @@
 ## About The Project
 
 Grade Guard began as a CMSC 18 final project at the University of the Philippines Mindanao.
-It is designed to help students monitor their academic progress on a per-semester basis by modeling courses, assessment categories, activity scores, and goal grades inside a text-based interface.
+It helps students keep a local academic record for one semester at a time, with support for course setup, weighted assessment categories, recorded scores, and projected academic standing.
 
-The current implementation now ships in-repository under `grade-guard/main.c` and uses a weighted-average approach to estimate student standing from the scores and course weights entered by the user.
-Detailed version notes for this source-backed baseline are available in `docs/version-0-1-0-docs.md`.
+The current codebase ships as a Windows-first C application with a thin `grade-guard/main.c` entry point and focused runtime modules for application flow, profile management, persistence, console UI helpers, grade calculation, shared data models, and dynamic vectors.
 
 ### What Grade Guard Does
 
-- Creates student profiles with basic academic identity data.
-- Tracks multiple courses, including units and optional laboratory components.
-- Lets users define course parameters such as quizzes, exams, and assignments with custom weights.
-- Records activity scores under each parameter and displays grade details in the console interface.
-- Stores profile data in numbered CSV files such as `0.csv`, `1.csv`, and so on in the working directory.
-- Supports grade-goal selection, including custom targets.
-- Calculates a predicted GWA and the percentage progress toward the selected grade goal.
+- Creates local student profiles with academic identity details and a target grade goal.
+- Tracks courses with lecture-only or lecture-plus-laboratory setups.
+- Lets users define weighted assessment categories such as quizzes, exams, projects, and assignments.
+- Records activity scores and shows the resulting breakdown in a keyboard-driven console interface.
+- Calculates predicted GWA and progress toward the selected goal.
+- Saves new profiles with the versioned `GRADE_GUARD_CSV,1` format and can still load older unversioned profile files.
 
 ### Current Limitations
 
-- Windows-only for now because the program depends on `windows.h` and `conio.h`.
-- Implemented as a single large C source file, so modularity and testability are still limited.
-- Uses manual CSV persistence with no automated migration, validation suite, or release pipeline yet.
-- Local binaries and editor scratch files still require manual cleanup before committing.
-
-### Current Implementation Snapshot
-
-- Entry point: `grade-guard/main.c`
-- UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, and screen clearing / cursor positioning helpers
-- Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
-- Academic model: lecture components plus optional laboratory components, each with weighted parameters and activity scores
-- Persistence model: numbered CSV files written in the working directory when the user exits from the main menu
+- Windows-only for now because the runtime depends on `windows.h` and `conio.h`.
+- Console redraw, fullscreen, and raw-key behavior still depend on the active Windows console host and benefit from live manual verification.
+- Numeric entry is bounded safely inside the grade engine, but malformed text is not yet rejected at every controller input point.
+- Persistence remains local-file based; there is no sync, export service, or multi-user storage layer.
 
 ### Built With
 
 - [C](https://en.wikipedia.org/wiki/C_(programming_language))
 - [Windows Console API](https://learn.microsoft.com/windows/console/)
-- Standard C library facilities for file I/O, memory management, and string handling
+- [PowerShell](https://learn.microsoft.com/powershell/)
+- GCC-compatible Windows toolchains such as MinGW-w64 or TDM-GCC
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Project Layout
+
+```text
+grade-guard/
+  grade-guard/
+    main.c
+    header/
+      app.h
+      grade_calc.h
+      models.h
+      persistence.h
+      profile_controller.h
+      ui_console.h
+      vector.h
+    source/
+      app.c
+      grade_calc.c
+      models.c
+      persistence.c
+      profile_controller.c
+      ui_console.c
+      vector.c
+    tests/
+      vector_test.c
+    unit-tests/
+      app_smoke_test.c
+      models_lifecycle_test.c
+      persistence_contract_test.c
+      test_framework.h
+      unit5_defect_baseline_test.c
+  docs/
+    version-1-0-0-docs.md
+    ...
+  scripts/
+    build.ps1
+    validate.ps1
+```
+
+The `docs/` directory keeps detailed release notes and implementation notes.
+The root documentation focuses on how to build, validate, and use the application.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -103,7 +139,8 @@ Detailed version notes for this source-backed baseline are available in `docs/ve
 ### Prerequisites
 
 - Windows 10 or Windows 11
-- A C compiler that can build code using `windows.h` and `conio.h`
+- PowerShell
+- A GCC-compatible Windows C toolchain on `PATH`
 - Git, if you want to clone the repository directly
 
 ### Build and Run
@@ -115,53 +152,72 @@ git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
 ```
 
-Build with GCC or MinGW-w64:
-
-```sh
-gcc grade-guard/main.c -o grade-guard.exe
-```
-
-Build with MSVC Developer PowerShell:
+Build the application with the default release-facing script:
 
 ```powershell
-cl /TC grade-guard\main.c /Fe:grade-guard.exe
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 ```
 
 Run the application:
 
 ```powershell
-.\grade-guard.exe
+.\artifacts\build\grade-guard.exe
 ```
 
-When you exit through the main menu, the program writes profile data back to numbered CSV files in the current working directory.
+If you want a different output path, pass `-OutputPath` explicitly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -OutputPath .\artifacts\custom\grade-guard.exe
+```
+
+When you exit from the main menu, the program saves profile data back to numbered CSV files in the working directory.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Usage
 
+Navigation is keyboard-driven through the Windows console UI and relies on arrow keys, `Enter`, and `Esc` on supported selection screens.
+
 Typical flow inside the application:
 
-Navigation is keyboard-driven through the Windows console UI and relies on arrow keys plus `Enter`.
-
 1. Select `New Profile` and enter your student details.
-2. Add one or more courses, including units and whether a course has a laboratory component.
-3. Define weighted course parameters such as quizzes, exams, projects, or assignments.
-4. Add activities and record achieved scores for each parameter.
-5. Set a target grade goal from the preset options or enter a custom goal.
-6. Use `View Grades` to inspect the current breakdown.
-7. Exit the program to persist loaded profiles back to numbered CSV files in the working directory.
+2. Add one or more courses and decide whether each course has a laboratory component.
+3. Define weighted assessment categories such as quizzes, exams, or assignments.
+4. Add activities and record achieved scores for each category.
+5. Select a target grade goal from the presets or enter a custom goal.
+6. Open `View Grades` to inspect the current breakdown and predicted GWA.
+7. Exit the program to persist the profile locally.
 
-You can also reopen an existing profile by student number through the `Select Profile` flow in the main menu.
+You can reopen an existing profile later by student number through the `Select Profile` flow in the main menu.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Validation
+
+Run the full validation workflow:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\validate.ps1
+```
+
+That workflow rebuilds the application into `artifacts/validation/` and executes:
+
+- `grade-guard/tests/vector_test.c`
+- `grade-guard/unit-tests/models_lifecycle_test.c`
+- `grade-guard/unit-tests/persistence_contract_test.c`
+- `grade-guard/unit-tests/unit5_defect_baseline_test.c`
+- `grade-guard/unit-tests/app_smoke_test.c`
+
+The validation path covers vector behavior, nested model lifecycle rules, CSV persistence, grade-engine edge cases, and application startup/save/load/delete orchestration through a smoke harness.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Roadmap
 
-- [ ] Split `grade-guard/main.c` into smaller modules with clearer ownership and a cleaner build/output layout.
-- [ ] Improve validation for score entry, CSV parsing, and edge cases.
-- [ ] Add a repeatable build workflow and automated verification.
-- [ ] Expand grade summaries and reporting for easier semester planning.
-- [ ] Evaluate cross-platform terminal support after the Windows prototype stabilizes.
+- Tighten controller-side numeric input validation so malformed text is rejected earlier.
+- Expand semester summary and reporting views.
+- Add broader automated coverage around interactive console workflows.
+- Evaluate a portable terminal abstraction after the Windows-first release baseline stabilizes.
 
 See the [open issues](https://github.com/zcalifornia-ph/grade-guard/issues) for planned improvements and known gaps.
 
@@ -171,12 +227,6 @@ See the [open issues](https://github.com/zcalifornia-ph/grade-guard/issues) for 
 
 Contributions are welcome.
 Read `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `SECURITY.md` before opening a pull request.
-
-1. Fork the project.
-2. Create a branch for your change.
-3. Implement and manually verify the update.
-4. Document user-visible changes where needed.
-5. Open a pull request with a clear summary and verification notes.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -207,9 +257,9 @@ Twitter: [@zcalifornia_](https://twitter.com/zcalifornia_)
 
 ## Acknowledgments
 
-- Ravhen M. Grageda, Charisse C. Lorejo, and Jhaye Marie H. Gonzales for the original project team named in the source header.
+- Ravhen M. Grageda, Charisse C. Lorejo, and Jhaye Marie H. Gonzales for the original project team named in the source headers.
 - University of the Philippines Mindanao, where the project originated as a course deliverable.
-- Students and contributors interested in practical academic tracking tools.
+- Students and contributors interested in practical academic planning tools.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

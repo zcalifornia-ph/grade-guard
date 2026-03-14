@@ -1,7 +1,7 @@
 # Contributing
 
 Thanks for contributing to Grade Guard.
-This repository currently centers on a Windows console C application in `grade-guard/main.c`, plus the root documentation that explains how the project is used and maintained.
+This repository centers on a Windows console C application plus the documentation and scripts that support building, validating, and maintaining it.
 
 ## Before You Start
 
@@ -12,43 +12,38 @@ This repository currently centers on a Windows console C application in `grade-g
 
 ## Development Setup
 
-Example setup with GCC or MinGW-w64:
-
-```sh
-git clone https://github.com/zcalifornia-ph/grade-guard.git
-cd grade-guard
-gcc grade-guard/main.c -o grade-guard.exe
-.\grade-guard.exe
-```
-
-Example setup with MSVC Developer PowerShell:
+Baseline setup:
 
 ```powershell
 git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
-cl /TC grade-guard\main.c /Fe:grade-guard.exe
-.\grade-guard.exe
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
+.\artifacts\build\grade-guard.exe
 ```
+
+This baseline assumes PowerShell and a GCC-compatible Windows C toolchain on `PATH`.
+Use the build script as the default path unless you are deliberately debugging a custom compile line.
 
 ## Contribution Standards
 
 - Preserve or improve clarity in the grade-tracking workflow.
-- Keep C code readable and close to the existing project style unless a larger refactor is justified.
+- Keep C code readable and close to the existing style unless a larger refactor is justified.
 - Document user-visible changes in `README.md` and `CHANGELOG.md` when relevant.
-- Include manual verification steps because the repository does not currently ship with an automated test suite.
-- Avoid committing generated CSV profile files or ignored agent-workflow files.
-- Do not introduce platform-specific behavior beyond Windows unless the goal of the change is explicit portability work.
+- Include manual verification steps plus any targeted automated checks relevant to your change.
+- Avoid committing generated build outputs or local profile data.
+- Do not introduce non-Windows-specific runtime behavior unless the change is explicitly about portability work.
 
 ## Recommended Verification
 
-Before opening a pull request, manually verify the main user flows:
+Before opening a pull request, verify the relevant flows:
 
-1. Build the executable successfully.
-2. Create a new profile.
-3. Add at least one course and define its parameters.
-4. Record at least one activity score.
-5. View the resulting grade breakdown.
-6. Exit and confirm the profile data persists to numbered CSV files in the working directory.
+1. Run `powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1` to confirm the application still builds.
+2. Run `powershell -ExecutionPolicy Bypass -File .\scripts\validate.ps1` if your change touches shared runtime modules, scripts, documentation, or multiple regression areas.
+3. Run the focused vector regression test if your change only touches the shared vector module and you are not already using the full validation script.
+4. Run the lifecycle regression test if your change touches `models`, nested ownership, or create/delete flows and you are not already using the full validation script.
+5. Run the persistence contract regression test if your change touches `persistence`, CSV schema rules, numbered-profile discovery, or startup/shutdown save/load behavior and you are not already using the full validation script.
+6. Run a live Windows console verification pass if your change touches `ui_console`, `app`, `profile_controller`, menu navigation, field editing, screen redraw logic, or other keyboard-driven UI behavior.
+7. Create a new profile, add at least one course, record at least one score, view the grade breakdown, then exit and confirm that local persistence still works.
 
 ## Pull Requests
 
