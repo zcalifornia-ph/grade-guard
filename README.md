@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for tracking semester courses, assessment weights, recorded scores, and projected academic standing.</strong>
     <br />
-    Version: v0.1.12
+    Version: v0.1.13
     <br />
-    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, grade-engine, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, repository-wide source attribution coverage, and validated Unit 5 defect fixes; remaining live Windows workflow review and Unit 6 release-readiness work are still pending
+    Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, grade-engine, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, repository-wide source attribution coverage, validated Unit 5 defect fixes, and a validated Unit 6.1 GCC build/validation workflow; remaining Unit 6.2 release-artifact work and live Windows console-host review are still pending
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-0-1-12-docs.md"><strong>Version 0.1.12 notes</strong></a>
+    <a href="docs/version-0-1-13-docs.md"><strong>Version 0.1.13 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -71,9 +71,10 @@ Unit 2 now includes the first real extracted utility and domain modules: the sha
 Unit 3 now includes both the shared UI/platform layer and the extracted controller path: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c` own the reusable Windows console primitives, `grade-guard/source/app.c` owns startup and top-level menu orchestration, and `grade-guard/source/profile_controller.c` now owns the interactive profile/course/activity workflows.
 Unit 4 now includes both the versioned persistence boundary and the next hardening pass: `grade-guard/header/persistence.h` and `grade-guard/source/persistence.c` now expose a status-based save/load/list API, write the versioned `GRADE_GUARD_CSV,1` schema for new saves, still load historical unversioned profile files through a documented compatibility path, reject oversized logical records safely, and refuse save-side rows that exceed the supported parser contract.
 Unit 5 now closes the first defect-remediation cycle: `docs/unit-5-bolt-5-1-defect-baseline.md` records the baseline defect inventory, `docs/unit-5-bolt-5-2-defect-fixes.md` records the final outcomes and validation evidence, and `grade-guard/unit-tests/unit5_defect_baseline_test.c` now runs as a focused regression harness for the fixed grade-engine and selection-flow behaviors.
-Focused regression coverage now exists for the shared vector layer, the domain lifecycle layer, the persistence contract, and the Unit 5 defect-fix set through `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, `grade-guard/unit-tests/persistence_contract_test.c`, and `grade-guard/unit-tests/unit5_defect_baseline_test.c`.
+Unit 6.1 now formalizes the validated repository workflow: `scripts/build.ps1` and `scripts/validate.ps1` define the baseline GCC build/acceptance run, and `docs/unit-6-bolt-6-1-build-validation.md` records the toolchain, warning flags, smoke coverage, and evidence.
+Focused regression coverage now exists for the shared vector layer, the domain lifecycle layer, the persistence contract, the Unit 5 defect-fix set, and the app-level orchestration seam through `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, `grade-guard/unit-tests/persistence_contract_test.c`, `grade-guard/unit-tests/unit5_defect_baseline_test.c`, and `grade-guard/unit-tests/app_smoke_test.c`.
 This repository state also normalizes a shared attribution-and-license header across every tracked `.c` and `.h` file under `grade-guard/`, so course provenance, authorship, and licensing remain visible even when an individual file is viewed on its own.
-Detailed version notes for this Unit 5 defect-fix update are available in `docs/version-0-1-12-docs.md`, and the latest Bolt-specific before/after trail is `docs/unit-5-bolt-5-1-defect-baseline.md` plus `docs/unit-5-bolt-5-2-defect-fixes.md`.
+Detailed version notes for the current tagged release are now in `docs/version-0-1-13-docs.md`, and the latest build/validation trail remains `docs/unit-6-bolt-6-1-build-validation.md`.
 
 ### What Grade Guard Does
 
@@ -88,9 +89,9 @@ Detailed version notes for this Unit 5 defect-fix update are available in `docs/
 ### Current Limitations
 
 - Windows-only for now because the program depends on `windows.h` and `conio.h`.
-- The main entry point is now thin, but the extracted interactive workflow path still depends on live console behavior and has not been covered by controller-level automated tests yet.
+- The main entry point is now thin, and a headless app smoke harness now covers startup/create/select/save/load/delete/exit orchestration, but the extracted interactive workflow path still depends on live console behavior and does not have raw-key controller automation under a real console host.
 - Uses local CSV persistence with a versioned save format, legacy load compatibility, and malformed/oversized record hardening, but live review of the end-user persistence failure flow, release automation, and broad end-to-end coverage are still incomplete.
-- The Unit 5 fixes are validated in targeted regression tests, but the affected Windows console flows still need a manual acceptance walkthrough to confirm `Esc` cancellation and no-data profile rendering under a real host.
+- The Unit 5 fixes and Unit 6.1 orchestration flow are validated in targeted regression tests, but the affected Windows console host behaviors still need a manual acceptance walkthrough to confirm redraw, fullscreen, and raw-key handling under a real host.
 - Numeric entry still accepts malformed or out-of-range text at the controller layer; the grade engine now bounds over-total scores and distinguishes no-data profiles, but input rejection is still not enforced at entry time.
 - Windows console redraw, clear-screen, fullscreen, and raw-key behavior still depend on the active host, so Unit 3 and Unit 5 workflow changes still require a live manual acceptance run in addition to compile/test checks.
 - Local binaries, generated CSV fixtures, and editor scratch files still require manual cleanup before committing.
@@ -111,7 +112,8 @@ Detailed version notes for this Unit 5 defect-fix update are available in `docs/
 - Persistence-hardening note: `docs/unit-4-bolt-4-2-persistence-hardening.md`
 - Unit 5 defect-baseline note: `docs/unit-5-bolt-5-1-defect-baseline.md`
 - Unit 5 defect-fix note: `docs/unit-5-bolt-5-2-defect-fixes.md`
-- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, Bolt 2.2 domain lifecycle extraction, Bolt 3.2 controller extraction, Bolt 4.1 persistence-contract hardening, Bolt 4.2 parsing/serialization hardening, and Bolt 5.2 defect remediation are recorded with evidence; the remaining open work centers on older review gates, live Windows workflow validation, controller-side numeric rejection, and Unit 6 release readiness.
+- Unit 6 build/validation note: `docs/unit-6-bolt-6-1-build-validation.md`
+- Progress checkpoint: Bolt 1.1 responsibility mapping, Bolt 1.2 scaffold creation, Bolt 2.1 vector extraction, Bolt 2.2 domain lifecycle extraction, Bolt 3.2 controller extraction, Bolt 4.1 persistence-contract hardening, Bolt 4.2 parsing/serialization hardening, Bolt 5.2 defect remediation, and Bolt 6.1 build/validation formalization are recorded with evidence; the remaining open work centers on older review gates, live Windows host validation, controller-side numeric rejection, and Unit 6.2 release artifacts.
 
 ### Current Implementation Snapshot
 
@@ -128,8 +130,10 @@ Detailed version notes for this Unit 5 defect-fix update are available in `docs/
 - Shared UI/platform module: `grade-guard/header/ui_console.h` and `grade-guard/source/ui_console.c`
 - Selection-cancel contract: `ui_selection_handler()` now exposes `UI_SELECTION_STATUS_CANCEL`, and the touched controller menus/selectors honor `Esc` as a real back-out path
 - Focused regression harnesses: `grade-guard/tests/vector_test.c`, `grade-guard/unit-tests/models_lifecycle_test.c`, `grade-guard/unit-tests/persistence_contract_test.c`, and `grade-guard/unit-tests/unit5_defect_baseline_test.c`
+- App orchestration smoke harness: `grade-guard/unit-tests/app_smoke_test.c`
 - Unit-test support: `grade-guard/unit-tests/test_framework.h`
 - Unit 5 defect notes: `docs/unit-5-bolt-5-1-defect-baseline.md` and `docs/unit-5-bolt-5-2-defect-fixes.md`
+- Unit 6 build/validation note: `docs/unit-6-bolt-6-1-build-validation.md`
 - Source attribution baseline: standardized university/course/license header block across every tracked `.c` and `.h` file under `grade-guard/`
 - UI model: keyboard-driven Windows console interface using arrow keys, `Enter`, `Esc`, and shared screen/cursor/field/selection helpers behind `ui_console`
 - Core data model: dynamic vectors for `Student_Profile`, `Course`, `Course_Parameter`, and `Activities`
@@ -150,8 +154,9 @@ Detailed version notes for this Unit 5 defect-fix update are available in `docs/
 ### Prerequisites
 
 - Windows 10 or Windows 11
-- A C compiler that can build code using `windows.h` and `conio.h`
+- A GCC-compatible Windows C toolchain on `PATH` that can build code using `windows.h` and `conio.h`
 - Git, if you want to clone the repository directly
+- PowerShell for the validated build/validation scripts
 
 ### Build and Run
 
@@ -162,57 +167,42 @@ git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
 ```
 
-Build with GCC or MinGW-w64:
+Validated baseline toolchain and warning flags:
 
 ```sh
-gcc -I grade-guard/header grade-guard/main.c grade-guard/source/app.c grade-guard/source/vector.c grade-guard/source/models.c grade-guard/source/grade_calc.c grade-guard/source/persistence.c grade-guard/source/ui_console.c grade-guard/source/profile_controller.c -o grade-guard.exe
+gcc.exe (tdm64-1) 10.3.0
+flags: -std=c17 -Wall -Wextra -pedantic
 ```
 
-Build with MSVC Developer PowerShell:
+Build the application with the validated script:
 
 ```powershell
-cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\app.c grade-guard\source\vector.c grade-guard\source\models.c grade-guard\source\grade_calc.c grade-guard\source\persistence.c grade-guard\source\ui_console.c grade-guard\source\profile_controller.c /Fe:grade-guard.exe
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 ```
 
 Run the application:
 
 ```powershell
-.\grade-guard.exe
+.\artifacts\unit-6-bolt-6-1\grade-guard.exe
 ```
 
 When you exit through the main menu, the program writes profile data back to numbered CSV files in the current working directory using the versioned `GRADE_GUARD_CSV,1` contract.
 
-Run the focused vector regression test with GCC:
+Run the full validation workflow:
 
-```sh
-gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/tests/vector_test.c grade-guard/source/vector.c -o grade-guard/tests/vector_test.exe
-.\grade-guard/tests/vector_test.exe
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\validate.ps1
 ```
 
-Run the domain lifecycle regression test with GCC:
+That acceptance run rebuilds the application and executes:
 
-```sh
-gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/unit-tests/models_lifecycle_test.c grade-guard/source/models.c grade-guard/source/vector.c -o grade-guard/unit-tests/models_lifecycle_test.exe
-.\grade-guard/unit-tests/models_lifecycle_test.exe
-```
+- `grade-guard/tests/vector_test.c`
+- `grade-guard/unit-tests/models_lifecycle_test.c`
+- `grade-guard/unit-tests/persistence_contract_test.c`
+- `grade-guard/unit-tests/unit5_defect_baseline_test.c`
+- `grade-guard/unit-tests/app_smoke_test.c`
 
-Run the persistence contract regression test with GCC:
-
-```sh
-gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/unit-tests/persistence_contract_test.c grade-guard/source/persistence.c grade-guard/source/models.c grade-guard/source/vector.c -o grade-guard/unit-tests/persistence_contract_test.exe
-.\grade-guard/unit-tests/persistence_contract_test.exe
-```
-
-That persistence regression now covers round-trip behavior, legacy compatibility, blank-line tolerance, missing fields, invalid numeric tokens, and oversized record rejection.
-
-Run the Unit 5 defect regression test with GCC:
-
-```sh
-gcc -std=c17 -Wall -Wextra -pedantic -I grade-guard/header grade-guard/unit-tests/unit5_defect_baseline_test.c grade-guard/source/grade_calc.c grade-guard/source/models.c grade-guard/source/vector.c grade-guard/source/ui_console.c -o grade-guard/unit-tests/unit5_defect_baseline_test.exe
-.\grade-guard/unit-tests/unit5_defect_baseline_test.exe
-```
-
-That regression harness now validates zero-score inclusion, normalized lab weighting, bounded over-total scores, no-data profile handling, valid all-zero-coursework `5.00` rendering, and shared selection-handler `Esc` cancellation.
+The new app smoke harness exercises startup, profile creation, profile selection, save/load, grading persistence, deletion persistence, and exit against the real `app.c` orchestration boundary with stubbed UI/controller hooks. See `docs/unit-6-bolt-6-1-build-validation.md` for the full validation matrix and residual live-console caveats.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -244,7 +234,7 @@ You can also reopen an existing profile by student number through the `Select Pr
 - [ ] Perform a live Windows console walkthrough of the fixed Unit 5 cancel/no-data flows and confirm the user-facing behavior under a real host.
 - [ ] Improve controller-side numeric validation so malformed values are rejected before they reach the grade engine instead of only being bounded during aggregation.
 - [ ] Expand the `grade-guard/unit-tests/` framework beyond shared vector, lifecycle, persistence-contract, and Unit 5 defect regression coverage.
-- [ ] Finalize Unit 6 build, smoke-test, and release-readiness documentation.
+- [ ] Finish Unit 6.2 release-artifact updates, changelog alignment, and final release-readiness approval.
 - [ ] Expand grade summaries and reporting for easier semester planning.
 - [ ] Evaluate cross-platform terminal support after the Windows prototype stabilizes.
 

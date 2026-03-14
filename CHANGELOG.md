@@ -1,6 +1,29 @@
 # Changelog
 
-Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, grade-engine, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, repository-wide source attribution coverage, and validated Unit 5 defect fixes; remaining live Windows workflow review and Unit 6 release-readiness work are still pending.
+Status: source-backed Windows console grade-tracking prototype with extracted utility, domain lifecycle, grade-engine, UI/platform, app orchestration, workflow-controller, hardened versioned persistence modules, repository-wide source attribution coverage, validated Unit 5 defect fixes, and a validated Unit 6.1 GCC build/validation workflow; remaining Unit 6.2 release-artifact work and live Windows console-host review are still pending.
+
+## v0.1.13 - 2026-03-14
+
+### Added or Changed
+- Updated `README.md` from `v0.1.12` to `v0.1.13`, refreshed the release-note link, and kept the top-level project status and build/validation guidance aligned with the new Unit 6.1 workflow baseline.
+- Added `scripts/build.ps1` to standardize the validated GCC application build under `-std=c17 -Wall -Wextra -pedantic`.
+- Added `scripts/validate.ps1` to run the full acceptance workflow, including the application build plus the vector, lifecycle, persistence, Unit 5, and app-smoke regression suites.
+- Added `grade-guard/unit-tests/app_smoke_test.c` to exercise real `app.c` orchestration behavior for startup, profile creation, selection, save/load, grading persistence, deletion persistence, and clean exit through a headless stubbed UI/controller seam, and normalized its source attribution block to match the rest of `grade-guard/`.
+- Added `docs/unit-6-bolt-6-1-build-validation.md` to document the Bolt 6.1 contract, ADR decisions, validation matrix, regression checklist, evidence, and residual live-console risk.
+- Added `docs/version-0-1-13-docs.md` with the fuller explanation of the Unit 6.1 release trail, contributor workflow updates, smoke-harness design, and manual cleanup expectations.
+- Updated `CONTRIBUTING.md` because the repository now has a preferred contributor build path and full validation command through `scripts/build.ps1` and `scripts/validate.ps1`.
+- Kept `SECURITY.md` and `CODE_OF_CONDUCT.md` unchanged because this version changes build/validation workflow documentation and release artifacts, not vulnerability-reporting policy or community-governance rules.
+
+### For Deletion
+- `artifacts/unit-6-bolt-6-1/` (acceptance-run output directory currently containing `grade-guard.exe`, `vector_test.exe`, `models_lifecycle_test.exe`, `persistence_contract_test.exe`, `unit5_defect_baseline_test.exe`, and `app_smoke_test.exe`).
+- `grade-guard/build-smoke/` (older smoke-build output directory still present in the workspace).
+- `grade-guard/0.csv` (numbered profile output currently present in the working directory).
+- `grade-guard/bolt-4-1-main.exe`, `grade-guard/bolt-4-2-main.exe`, `grade-guard/bolt-5-1-main.exe`, and `grade-guard/bolt-5-2-main.exe` (older acceptance-build artifacts still present in the workspace).
+- `grade-guard/tests/vector_test.exe` (local vector regression-test binary present in the workspace).
+- `grade-guard/unit-tests/models_lifecycle_test.exe`, `grade-guard/unit-tests/persistence_contract_test.exe`, and `grade-guard/unit-tests/unit5_defect_baseline_test.exe` (local regression-test binaries present in the workspace).
+- `grade-guard/unit-tests/persistence-blank-lines.csv`, `grade-guard/unit-tests/persistence-invalid-number.csv`, `grade-guard/unit-tests/persistence-legacy-fixture.csv`, `grade-guard/unit-tests/persistence-missing-field.csv`, `grade-guard/unit-tests/persistence-oversized-record.csv`, `grade-guard/unit-tests/persistence-shape-lecture.csv`, `grade-guard/unit-tests/persistence-shape-lab.csv`, and `grade-guard/unit-tests/persistence-shape-mixed.csv` (generated persistence-regression fixture outputs).
+- `grade-guard/unit-tests/persistence-runtime/` (generated numbered runtime-output directory currently containing `0.csv` and `1.csv`).
+- `grade-guard/unit-tests/app-smoke-runtime/` (generated app-smoke runtime directory currently containing `create-exit-1773474389-1/0.csv` and `select-delete-1773474389-2/0.csv`).
 
 ## v0.1.12 - 2026-03-14
 

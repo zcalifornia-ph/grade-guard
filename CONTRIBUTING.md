@@ -12,23 +12,17 @@ This repository currently centers on a Windows console C application with a thin
 
 ## Development Setup
 
-Example setup with GCC or MinGW-w64:
-
-```sh
-git clone https://github.com/zcalifornia-ph/grade-guard.git
-cd grade-guard
-gcc -I grade-guard/header grade-guard/main.c grade-guard/source/app.c grade-guard/source/vector.c grade-guard/source/models.c grade-guard/source/grade_calc.c grade-guard/source/persistence.c grade-guard/source/ui_console.c grade-guard/source/profile_controller.c -o grade-guard.exe
-.\grade-guard.exe
-```
-
-Example setup with MSVC Developer PowerShell:
+Validated baseline setup:
 
 ```powershell
 git clone https://github.com/zcalifornia-ph/grade-guard.git
 cd grade-guard
-cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\app.c grade-guard\source\vector.c grade-guard\source\models.c grade-guard\source\grade_calc.c grade-guard\source\persistence.c grade-guard\source\ui_console.c grade-guard\source\profile_controller.c /Fe:grade-guard.exe
-.\grade-guard.exe
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
+.\artifacts\unit-6-bolt-6-1\grade-guard.exe
 ```
+
+This baseline assumes PowerShell plus a GCC-compatible Windows C toolchain on `PATH`.
+Use the manual compile commands in `README.md` only if you are deliberately debugging the raw compile line instead of the validated script path.
 
 ## Contribution Standards
 
@@ -41,18 +35,19 @@ cl /I grade-guard\header /TC grade-guard\main.c grade-guard\source\app.c grade-g
 
 ## Recommended Verification
 
-Before opening a pull request, manually verify the main user flows:
+Before opening a pull request, verify the relevant flows:
 
-1. Build the executable successfully.
-2. Run the focused vector regression test if your change touches the shared vector module.
-3. Run the lifecycle regression test if your change touches `models`, nested ownership, or create/delete flows.
-4. Run the persistence contract regression test if your change touches `persistence`, CSV schema rules, numbered-profile discovery, or startup/shutdown save/load behavior.
-5. Run a live Windows console verification pass if your change touches `ui_console`, `app`, `profile_controller`, menu navigation, field editing, screen redraw logic, or other keyboard-driven UI behavior.
-6. Create a new profile.
-7. Add at least one course and define its parameters.
-8. Record at least one activity score.
-9. View the resulting grade breakdown.
-10. Exit and confirm the profile data persists to numbered CSV files in the working directory.
+1. Run `powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1` to confirm the validated application build still works.
+2. Run `powershell -ExecutionPolicy Bypass -File .\scripts\validate.ps1` if your change touches shared runtime modules, release/readme documentation, validation scripts, or more than one regression area.
+3. Run the focused vector regression test if your change touches the shared vector module and you are not already using the full validation script.
+4. Run the lifecycle regression test if your change touches `models`, nested ownership, or create/delete flows and you are not already using the full validation script.
+5. Run the persistence contract regression test if your change touches `persistence`, CSV schema rules, numbered-profile discovery, or startup/shutdown save/load behavior and you are not already using the full validation script.
+6. Run a live Windows console verification pass if your change touches `ui_console`, `app`, `profile_controller`, menu navigation, field editing, screen redraw logic, or other keyboard-driven UI behavior.
+7. Create a new profile.
+8. Add at least one course and define its parameters.
+9. Record at least one activity score.
+10. View the resulting grade breakdown.
+11. Exit and confirm the profile data persists to numbered CSV files in the working directory.
 
 ## Pull Requests
 
