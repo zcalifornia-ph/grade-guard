@@ -1,6 +1,26 @@
 # Changelog
 
-Status: `1.0.0` is the current supported release line for the Grade Guard Windows console application.
+Status: `1.0.1` is the current supported release line for the Grade Guard Windows console application.
+
+## v1.0.1 - 2026-03-15
+
+### Added or Changed
+- Bumped the repository release metadata from `v1.0.0` to `v1.0.1`.
+- Expanded `README.md` with a screenshot-backed `Usage` walkthrough that reconstructs the Grade Guard CLI flow from the ordered `repo/demo/` image sequence.
+- Added `README.md` subsections for keyboard controls, the full CLI walkthrough, and resuming a saved profile by student number.
+- Updated the `README.md` project-layout section so `repo/demo/` and `repo/images/` are represented in the documented repository structure.
+- Added `repo/demo/grade-guard- (1).png` through `repo/demo/grade-guard- (24).png` as repository demo assets referenced by the root documentation.
+- Added `docs/version-1-0-1-docs.md` with release notes for this documentation patch.
+
+### For Deletion
+- `artifacts/build/` (current local build output directory, currently containing `grade-guard.exe` and `0.csv`).
+- `artifacts/validation/` (current validation output directory still present in the workspace).
+- `artifacts/unit-6-bolt-6-1/` and `artifacts/unit-6-bolt-6-2/` (older release-validation output directories still present in the workspace).
+- `grade-guard.exe`, `0.csv`, `grade-guard/0.csv`, and `review-persistence/0.csv` (local generated executable/profile outputs present in working directories).
+- `grade-guard/bolt-4-1-main.exe`, `grade-guard/bolt-4-2-main.exe`, `grade-guard/bolt-5-1-main.exe`, and `grade-guard/bolt-5-2-main.exe` (older acceptance-build artifacts still present).
+- `grade-guard/tests/vector_test.exe`, `grade-guard/unit-tests/models_lifecycle_test.exe`, `grade-guard/unit-tests/persistence_contract_test.exe`, and `grade-guard/unit-tests/unit5_defect_baseline_test.exe` (local regression-test binaries still present).
+- `grade-guard/unit-tests/persistence-runtime/` and `grade-guard/unit-tests/app-smoke-runtime/` (generated runtime-output directories still containing numbered CSV files).
+- `grade-guard/unit-tests/persistence-blank-lines.csv`, `grade-guard/unit-tests/persistence-invalid-number.csv`, `grade-guard/unit-tests/persistence-legacy-fixture.csv`, `grade-guard/unit-tests/persistence-missing-field.csv`, `grade-guard/unit-tests/persistence-oversized-record.csv`, `grade-guard/unit-tests/persistence-shape-lecture.csv`, `grade-guard/unit-tests/persistence-shape-lab.csv`, and `grade-guard/unit-tests/persistence-shape-mixed.csv` (generated persistence-regression fixture outputs still present).
 
 ## v1.0.0 - 2026-03-14
 

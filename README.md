@@ -15,13 +15,13 @@
   <p align="center">
     <strong>Grade Guard is a Windows console application for planning, tracking, and reviewing semester grades from local student profiles.</strong>
     <br />
-    Version: v1.0.0
+    Version: v1.0.1
     <br />
-    Status: 1.0.0 release baseline for the Windows console application, with automated validation for core data, persistence, grade calculation, and app orchestration flows.
+    Status: 1.0.1 documentation patch on top of the 1.0.0 release baseline, adding a screenshot-backed CLI walkthrough and demo assets for the Windows console application.
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard"><strong>Explore the repository</strong></a>
     <br />
-    <a href="docs/version-1-0-0-docs.md"><strong>Version 1.0.0 notes</strong></a>
+    <a href="docs/version-1-0-1-docs.md"><strong>Version 1.0.1 notes</strong></a>
     <br />
     <br />
     <a href="https://github.com/zcalifornia-ph/grade-guard/issues">Report Bug</a>
@@ -49,7 +49,14 @@
         <li><a href="#build-and-run">Build and Run</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
+    <li>
+      <a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#controls">Controls</a></li>
+        <li><a href="#cli-walkthrough">CLI Walkthrough</a></li>
+        <li><a href="#resume-a-saved-profile">Resume a Saved Profile</a></li>
+      </ul>
+    </li>
     <li><a href="#validation">Validation</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
@@ -122,14 +129,18 @@ grade-guard/
       test_framework.h
       unit5_defect_baseline_test.c
   docs/
-    version-1-0-0-docs.md
+    version-1-0-1-docs.md
     ...
+  repo/
+    demo/
+    images/
   scripts/
     build.ps1
     validate.ps1
 ```
 
 The `docs/` directory keeps detailed release notes and implementation notes.
+The `repo/` directory stores repository-facing screenshots and ordered demo walkthrough images used by the README.
 The root documentation focuses on how to build, validate, and use the application.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -176,19 +187,115 @@ When you exit from the main menu, the program saves profile data back to numbere
 
 ## Usage
 
-Navigation is keyboard-driven through the Windows console UI and relies on arrow keys, `Enter`, and `Esc` on supported selection screens.
+Grade Guard is a keyboard-first Windows console application. The screenshots in `repo/demo/` below show a typical session from profile creation through grade review, using the actual prompts and menus from the CLI.
 
-Typical flow inside the application:
+### Controls
 
-1. Select `New Profile` and enter your student details.
-2. Add one or more courses and decide whether each course has a laboratory component.
-3. Define weighted assessment categories such as quizzes, exams, or assignments.
-4. Add activities and record achieved scores for each category.
-5. Select a target grade goal from the presets or enter a custom goal.
-6. Open `View Grades` to inspect the current breakdown and predicted GWA.
-7. Exit the program to persist the profile locally.
+- Use arrow keys to move between highlighted menu entries.
+- Press `Enter` to confirm a menu choice or save a typed value.
+- Press `Esc` to back out of selection screens or stop the initial add-course loop when prompted.
+- Text-entry prompts commonly show `Backspace` when you want to clear and retype the current field.
 
-You can reopen an existing profile later by student number through the `Select Profile` flow in the main menu.
+### CLI Walkthrough
+
+1. Create a new profile, confirm the captured student details, and add the first course.
+
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%281%29.png" alt="New profile confirmation screen" width="48%" />
+     <img src="repo/demo/grade-guard-%20%282%29.png" alt="Initial add course screen after profile creation" width="48%" />
+   </p>
+
+   The first setup flow asks for the student's name, student number, and degree program. After confirmation, the CLI immediately asks for the first course name, unit count, and whether the course has a lab component.
+
+2. Choose the target grade goal for the semester profile.
+
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%283%29.png" alt="Grade goal selection menu" width="70%" />
+   </p>
+
+   You can pick from preset goals such as `Passing`, `Average`, `Cum Laude`, `Magna Cum Laude`, and `Summa Cum Laude`, or enter a custom target. The demo selects `Summa Cum Laude [1.20]`.
+
+3. Re-open the saved profile later through `Select Profile`.
+
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%284%29.png" alt="Select profile screen asking for student number" width="70%" />
+   </p>
+
+   After the profile has been saved to a local CSV, you can load it again by entering the same student number. This is the entry point for continuing work on an existing semester record.
+
+4. Use the profile operations menu as the main hub for the rest of the workflow.
+
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%285%29.png" alt="Profile operations menu" width="70%" />
+   </p>
+
+   From here, you branch into `Activity Operations`, `Course Operations`, `Profile Settings`, `View Grades`, or `Logout`.
+
+5. Define the grading breakdown for each course before adding scores.
+
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%286%29.png" alt="Course operations menu highlighting course parameters" width="48%" />
+     <img src="repo/demo/grade-guard-%20%287%29.png" alt="Course parameter operations menu" width="48%" />
+   </p>
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%288%29.png" alt="Prompt to enter a parameter name" width="48%" />
+     <img src="repo/demo/grade-guard-%20%289%29.png" alt="Prompt to enter a parameter weight" width="48%" />
+   </p>
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%2810%29.png" alt="Course parameter operations menu highlighting print parameters" width="48%" />
+     <img src="repo/demo/grade-guard-%20%2811%29.png" alt="Printed parameter list for CMSC 18" width="48%" />
+   </p>
+
+   Open `Course Operations`, choose `Course Parameters`, and add weighted categories such as `Quiz` and `Exam`. The demo assigns `50%` to each and then uses `Print Parameters` to verify the course setup before moving on.
+
+6. Update the grade goal later from `Profile Settings` if the target changes.
+
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%2812%29.png" alt="Profile settings menu" width="48%" />
+     <img src="repo/demo/grade-guard-%20%2813%29.png" alt="Profile settings highlighting set grade goal" width="48%" />
+   </p>
+
+   This menu is the quick path for revising the semester goal without rebuilding the profile from scratch.
+
+7. Register activities before entering earned points.
+
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%2814%29.png" alt="Activity operations menu highlighting add activity" width="48%" />
+     <img src="repo/demo/grade-guard-%20%2815%29.png" alt="Add activity course selection screen" width="48%" />
+   </p>
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%2816%29.png" alt="Add activity parameter selection screen" width="48%" />
+     <img src="repo/demo/grade-guard-%20%2817%29.png" alt="Prompt to enter activity name and total score" width="48%" />
+   </p>
+
+   Go to `Activity Operations`, select the course, pick the parameter bucket, then enter the activity name and total score. The demo adds `Quiz 1` with a total score of `10`. Repeat the same loop for every quiz, long exam, project, or assignment you want to track.
+
+8. Enter the achieved scores and watch the prediction update.
+
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%2818%29.png" alt="Activity operations menu highlighting add score" width="48%" />
+     <img src="repo/demo/grade-guard-%20%2819%29.png" alt="Add score course selection screen" width="48%" />
+   </p>
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%2820%29.png" alt="Add score parameter selection screen" width="32%" />
+     <img src="repo/demo/grade-guard-%20%2821%29.png" alt="Add score activity selection screen" width="32%" />
+     <img src="repo/demo/grade-guard-%20%2822%29.png" alt="Prompt to enter a new score" width="32%" />
+   </p>
+
+   Use `Add Score` to select the course, parameter, and exact activity, then type the score you earned. The demo records `48` for `Long Exam 2`, and the predicted GWA jumps from `4.28` to `1.32`, which the profile reports as `97.40%` of the `1.20` goal.
+
+9. Open `View Grades` to inspect the full stored breakdown.
+
+   <p align="center">
+     <img src="repo/demo/grade-guard-%20%2823%29.png" alt="Profile operations menu highlighting view grades" width="48%" />
+     <img src="repo/demo/grade-guard-%20%2824%29.png" alt="Detailed view grades output" width="48%" />
+   </p>
+
+   The final screen prints each course, component, parameter, and recorded activity with its saved score. The later demo screenshots show a fuller sample dataset after repeating the same `Add Activity` and `Add Score` loops for more quizzes and exams.
+
+### Resume a Saved Profile
+
+When you are done entering data, choose `Logout` or exit from the main menu. Grade Guard persists the profile locally, and you can continue later by returning to `Select Profile` and entering the student number shown during setup.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
